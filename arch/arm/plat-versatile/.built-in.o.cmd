@@ -1,1 +1,0 @@
-cmd_arch/arm/plat-versatile/built-in.o :=  /home/ken/workspace/tools/arm-2009q3/bin/arm-none-linux-gnueabi-ld -EL    -r -o arch/arm/plat-versatile/built-in.o arch/arm/plat-versatile/clock.o arch/arm/plat-versatile/clcd.o arch/arm/plat-versatile/fpga-irq.o arch/arm/plat-versatile/leds.o arch/arm/plat-versatile/sched-clock.o 

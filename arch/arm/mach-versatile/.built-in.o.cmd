@@ -1,1 +1,0 @@
-cmd_arch/arm/mach-versatile/built-in.o :=  /home/ken/workspace/tools/arm-2009q3/bin/arm-none-linux-gnueabi-ld -EL    -r -o arch/arm/mach-versatile/built-in.o arch/arm/mach-versatile/core.o arch/arm/mach-versatile/versatile_pb.o arch/arm/mach-versatile/pci.o 

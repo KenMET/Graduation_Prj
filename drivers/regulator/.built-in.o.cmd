@@ -1,1 +1,0 @@
-cmd_drivers/regulator/built-in.o :=  /home/ken/workspace/tools/arm-2009q3/bin/arm-none-linux-gnueabi-ld -EL    -r -o drivers/regulator/built-in.o drivers/regulator/core.o drivers/regulator/dummy.o drivers/regulator/fixed.o drivers/regulator/s5m8767.o 

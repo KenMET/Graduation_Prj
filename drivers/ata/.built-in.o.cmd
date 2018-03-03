@@ -1,1 +1,0 @@
-cmd_drivers/ata/built-in.o :=  /home/ken/workspace/tools/arm-2009q3/bin/arm-none-linux-gnueabi-ld -EL    -r -o drivers/ata/built-in.o drivers/ata/libata.o drivers/ata/ata_piix.o drivers/ata/pata_sis.o drivers/ata/ata_generic.o 

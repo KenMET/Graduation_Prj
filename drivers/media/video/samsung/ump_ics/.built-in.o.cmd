@@ -1,1 +1,0 @@
-cmd_drivers/media/video/samsung/ump_ics/built-in.o :=  /home/ken/workspace/tools/arm-2009q3/bin/arm-none-linux-gnueabi-ld -EL    -r -o drivers/media/video/samsung/ump_ics/built-in.o drivers/media/video/samsung/ump_ics/ump.o 

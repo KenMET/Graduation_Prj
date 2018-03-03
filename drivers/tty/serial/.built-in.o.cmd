@@ -1,1 +1,0 @@
-cmd_drivers/tty/serial/built-in.o :=  /home/ken/workspace/tools/arm-2009q3/bin/arm-none-linux-gnueabi-ld -EL    -r -o drivers/tty/serial/built-in.o drivers/tty/serial/serial_core.o drivers/tty/serial/8250.o drivers/tty/serial/samsung.o drivers/tty/serial/s5pv210.o 

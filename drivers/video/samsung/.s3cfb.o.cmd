@@ -1,1 +1,0 @@
-cmd_drivers/video/samsung/s3cfb.o := /home/ken/workspace/tools/arm-2009q3/bin/arm-none-linux-gnueabi-ld -EL    -r -o drivers/video/samsung/s3cfb.o drivers/video/samsung/s3cfb_main.o drivers/video/samsung/s3cfb_ops.o 
