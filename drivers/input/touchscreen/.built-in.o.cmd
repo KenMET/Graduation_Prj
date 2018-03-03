@@ -1,0 +1,1 @@
+cmd_drivers/input/touchscreen/built-in.o :=  /home/ken/workspace/tools/arm-2009q3/bin/arm-none-linux-gnueabi-ld -EL    -r -o drivers/input/touchscreen/built-in.o drivers/input/touchscreen/tsc2007.o drivers/input/touchscreen/ft5x06_ts.o 

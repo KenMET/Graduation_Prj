@@ -1,0 +1,1 @@
+cmd_drivers/mtk_wcn_combo/common/mtk_hif_sdio.o := ../android/prebuilt/linux-x86/toolchain/arm-linux-androideabi-4.4.x/bin/arm-linux-androideabi-ld -EL    -r -o drivers/mtk_wcn_combo/common/mtk_hif_sdio.o drivers/mtk_wcn_combo/common/linux/hif_sdio.o 

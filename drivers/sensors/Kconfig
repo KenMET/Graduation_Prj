@@ -1,0 +1,20 @@
+menu "Sensors Support"
+
+config SENSORS
+	tristate "Generic sensors layer (needed for mpu6050, ...)"
+	default y
+	help
+	  Say Y here if you have any sensors
+
+if SENSORS
+
+config SENSORS_MPU6050
+	tristate  "mpu6050 detect support"
+	default y
+	depends on I2C
+	help
+	  Help yourself.........
+
+endif
+
+endmenu

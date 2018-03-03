@@ -1,0 +1,1 @@
+cmd_drivers/mtk_wcn_combo/common/mtk_stp_bt.o := ../android/prebuilt/linux-x86/toolchain/arm-linux-androideabi-4.4.x/bin/arm-linux-androideabi-ld -EL    -r -o drivers/mtk_wcn_combo/common/mtk_stp_bt.o drivers/mtk_wcn_combo/common/linux/stp_chrdev_bt.o 

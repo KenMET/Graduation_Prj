@@ -1,0 +1,1 @@
+cmd_drivers/input/tablet/wacom.o := /home/ken/workspace/tools/arm-2009q3/bin/arm-none-linux-gnueabi-ld -EL    -r -o drivers/input/tablet/wacom.o drivers/input/tablet/wacom_wac.o drivers/input/tablet/wacom_sys.o 

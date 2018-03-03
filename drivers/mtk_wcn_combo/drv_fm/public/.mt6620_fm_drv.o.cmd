@@ -1,0 +1,1 @@
+cmd_drivers/mtk_wcn_combo/drv_fm/public/mt6620_fm_drv.o := ../android/prebuilt/linux-x86/toolchain/arm-linux-androideabi-4.4.x/bin/arm-linux-androideabi-ld -EL    -r -o drivers/mtk_wcn_combo/drv_fm/public/mt6620_fm_drv.o drivers/mtk_wcn_combo/drv_fm/public/mt6620_fm.o drivers/mtk_wcn_combo/drv_fm/public/mt6620_fm_lib.o drivers/mtk_wcn_combo/drv_fm/public/mt6620_rds.o 

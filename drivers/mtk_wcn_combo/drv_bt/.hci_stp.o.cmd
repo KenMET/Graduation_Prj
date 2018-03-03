@@ -1,0 +1,1 @@
+cmd_drivers/mtk_wcn_combo/drv_bt/hci_stp.o := ../android/prebuilt/linux-x86/toolchain/arm-linux-androideabi-4.4.x/bin/arm-linux-androideabi-ld -EL    -r -o drivers/mtk_wcn_combo/drv_bt/hci_stp.o drivers/mtk_wcn_combo/drv_bt/linux/hci_stp.o 

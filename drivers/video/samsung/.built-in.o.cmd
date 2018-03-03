@@ -1,0 +1,1 @@
+cmd_drivers/video/samsung/built-in.o :=  /home/ken/workspace/tools/arm-2009q3/bin/arm-none-linux-gnueabi-ld -EL    -r -o drivers/video/samsung/built-in.o drivers/video/samsung/s3cfb.o drivers/video/samsung/s3cfb_fimd6x.o drivers/video/samsung/s3cfb_wa101s.o 

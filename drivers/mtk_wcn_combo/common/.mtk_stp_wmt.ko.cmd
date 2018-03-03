@@ -1,0 +1,1 @@
+cmd_drivers/mtk_wcn_combo/common/mtk_stp_wmt.ko := ../android/prebuilt/linux-x86/toolchain/arm-linux-androideabi-4.4.x/bin/arm-linux-androideabi-ld -EL -r  -T /home/eason/Project/ramos_source/kernel/scripts/module-common.lds --build-id  -o drivers/mtk_wcn_combo/common/mtk_stp_wmt.ko drivers/mtk_wcn_combo/common/mtk_stp_wmt.o drivers/mtk_wcn_combo/common/mtk_stp_wmt.mod.o
