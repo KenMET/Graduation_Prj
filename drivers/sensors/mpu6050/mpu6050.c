@@ -72,7 +72,7 @@ static int mpu6050_probe(struct i2c_client *client, const struct i2c_device_id *
 	return 0;
 
 exit_check_functionality_failed:
-	dev_err(&client->dev, "probe mpu6050 failed, %d\n", err);
+	dev_err(&client->dev, "probe mpu6050 failed , %d\n", err);
 	return err;
 }
 
