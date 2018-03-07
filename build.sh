@@ -1,21 +1,28 @@
 #!/bin/sh
 A=/home/ken/workspace/exynos4412/exynos4412_Kernel_3.0
 B=/home/ken/workspace/exynos4412/tmp
+Count=0
+let Count++
+let Count--
 echo 'Copying new files......Please wait'
 
 find . -mtime -1 -regex ".*\.c\|.*\.h" > line
 for filename in `cat line`
 do
-#if [ ! -f "$B"/"$filename" ]; then
-Val1=$(md5sum "$filename"|cut -d ' ' -f1)
 TempName=${filename#.*/}
+if [ -e "$B"/"$TempName" ]; then
+Val1=$(md5sum "$filename"|cut -d ' ' -f1)
 Val2=$(md5sum "$B"/"$TempName"|cut -d ' ' -f1)
 if [ $Val1 != $Val2 ]; then
 cp -rf "$filename" "$B"/"$TempName"
 let Count++
 echo "$filename" is diffrent,Copyed...
 fi
-#fi
+else
+echo "$filename" is not exist...Copyed
+cp -rf "$filename" "$B"/"$TempName"
+let Count++
+fi
 done
 rm -rf "$A"/line
 

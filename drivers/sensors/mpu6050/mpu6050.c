@@ -18,67 +18,94 @@
 #include <linux/interrupt.h>
 #include <linux/irq.h>
 #include <linux/gpio.h>
+#include <linux/cdev.h>
 #include <linux/platform_device.h>
 
-#define MPU_NAME	"mpu6050"
+#include "mpu6050.h"
 
-static struct i2c_client *this_client;
 
-static int mpu6050_open(struct file *filp)
+struct mpu6050_device *mpu6050;
+
+static int mpu6050_open(struct inode *inode, struct file *filp)
 {
     return 0;
 }
 
-static int mpu6050_release(struct file *filp)
+static int mpu6050_release(struct inode *inode, struct file *filp)
 {
     return 0;
 }
 
-
-static ssize_t mpu6050_write(struct file *filp, char __user *buffer, size_t count, loff_t *ppos)
+static long mpu6050_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 {
-	int ret = 0;
-
-	return ret;
+	return 0;
 }
 
-static ssize_t mpu6050_read(struct file *filp, char __user *buffer, size_t count, loff_t *ppos)
-{
-	int ret = 0;
-
-	return ret;
-
-}
-
-static struct file_operations mpu6050_ops = {
-    .owner		= THIS_MODULE,
-    .open		= mpu6050_open,
-    .release	= mpu6050_release,
-    .write		= mpu6050_write,
-    .read		= mpu6050_read,
+static struct file_operations mpu6050_fops = {
+    .owner			= THIS_MODULE,
+    .open			= mpu6050_open,
+    .release		= mpu6050_release,
+    .unlocked_ioctl = mpu6050_ioctl,
 };
 
 static int mpu6050_probe(struct i2c_client *client, const struct i2c_device_id *id)
 {
 	int err = -EINVAL;
-	printk(KERN_ALERT "mpu6050 driver probe!\n");
+	dev_t devno = MKDEV(MPU_MAJOR, MPU_MINOR);
+
+	printk(KERN_ALERT "mpu6050 driver  probe!\n");
+	
 	if (!i2c_check_functionality(client->adapter, I2C_FUNC_I2C)) 
 	{		
-		err = -ENODEV;		
-		goto exit_check_functionality_failed;	
+		err = -ENODEV;
+		dev_err(&client->dev, "probe check functionality failed\n");
+		goto check_functionality_failed;	
 
 	}
 	
+	mpu6050 = kzalloc(sizeof(*mpu6050), GFP_KERNEL);  
+    if (mpu6050 == NULL) {  
+        err = -ENODEV;	 
+		dev_err(&client->dev, "probe kzalloc failed\n");
+		goto kzalloc_failed;
+    }
+
+	mpu6050->client = client;
+
+	err = register_chrdev_region(devno, 1, MPU_NAME);
+	if (err < 0) {  
+        err = -ENODEV;
+		dev_err(&client->dev, "probe register chrdev failed\n");
+		goto register_chrdev_failed;
+    }
+
+	cdev_init(&mpu6050->cdev, &mpu6050_fops);  
+	mpu6050->cdev.owner = THIS_MODULE;	
+	err = cdev_add(&mpu6050->cdev, devno, 1);  
+	if (err < 0) {	
+		dev_err(&client->dev, "failed to add device\n");  
+		goto add_cdev_failed;	
+	}
+
+
 	return 0;
 
-exit_check_functionality_failed:
-	dev_err(&client->dev, "probe mpu6050 failed , %d\n", err);
+add_cdev_failed:
+	unregister_chrdev_region(devno, 1);
+register_chrdev_failed:
+	kfree(mpu6050);
+kzalloc_failed:
+check_functionality_failed:
 	return err;
 }
 
 static int __devexit mpu6050_remove(struct i2c_client *client)
 {
+	dev_t devno = MKDEV(MPU_MAJOR, MPU_MINOR); 
 	printk(KERN_ALERT "mpu6050 driver remove!\n");
+    cdev_del(&mpu6050->cdev);  
+    unregister_chrdev_region(devno, 1);  
+    kfree(mpu6050);
 	return 0;
 }
 
