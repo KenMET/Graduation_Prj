@@ -1,0 +1,48 @@
+#ifndef __MPU6050_H__
+#define __MPU6050_H__
+
+#include "stm32f10x.h"
+#include "stdint.h"
+#include "math.h"
+#include "sys.h"
+
+#include "Usart.h"
+#include "IIC_Direct.h"
+
+
+#include "inv_mpu.h" //st.chip_cfg.sample_rate & DEFAULT_MPU_HZ就是在此处进行了设定
+#include "inv_mpu_dmp_motion_driver.h"
+
+#define pitch_angel_offset 0.0f
+#define roll_angel_offset	 0.0f
+
+#define RAD_TO_DEG 57.295779513082320876798154814105  
+#define DEG_TO_RAD 0.01745329251994329576923690768489 
+#define q30  1073741824.0f
+
+#define INT GPIO_ReadInputDataBit(GPIOA,GPIO_Pin_7)
+
+#define BITBAND(addr, bitnum) ((addr & 0xF0000000)+0x2000000+((addr &0xFFFFF)<<5)+(bitnum<<2)) 
+#define MEM_ADDR(addr)  *((volatile unsigned long  *)(addr)) 
+#define BIT_ADDR(addr, bitnum)   MEM_ADDR(BITBAND(addr, bitnum)) 
+
+
+
+typedef struct{	
+	volatile float w_roll;
+	volatile float w_pitch;
+	volatile float w_yaw;
+	volatile float angle_roll;
+	volatile float angle_pitch;
+	volatile float angle_yaw;
+}W_AND_ANGLE;
+
+extern W_AND_ANGLE  w_and_angle;		//这两个都是要在其他函数中使用的变量，所以放在此处
+extern float Desire_Angle_Pitch;
+
+
+
+extern void MPU6050_Init(void);
+extern void MPU6050_Pose(void);
+
+#endif

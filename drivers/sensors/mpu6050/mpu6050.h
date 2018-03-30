@@ -13,25 +13,34 @@
 #ifndef __MPU6050_H__
 #define __MPU6050_H__
 
-#define SMPLRT_DIV      0x19  
-#define CONFIG          0x1A  
-#define GYRO_CONFIG     0x1B  
-#define ACCEL_CONFIG    0x1C  
-#define ACCEL_XOUT_H    0x3B  
-#define ACCEL_XOUT_L    0x3C  
-#define ACCEL_YOUT_H    0x3D  
-#define ACCEL_YOUT_L    0x3E  
-#define ACCEL_ZOUT_H    0x3F  
-#define ACCEL_ZOUT_L    0x40  
-#define TEMP_OUT_H      0x41  
-#define TEMP_OUT_L      0x42  
-#define GYRO_XOUT_H     0x43  
-#define GYRO_XOUT_L     0x44  
-#define GYRO_YOUT_H     0x45  
-#define GYRO_YOUT_L     0x46  
-#define GYRO_ZOUT_H     0x47  
-#define GYRO_ZOUT_L     0x48  
-#define PWR_MGMT_1      0x6B
+#include <linux/cdev.h>
+
+
+#define SMPLRT_DIV      	0x19  
+#define CONFIG          	0x1A  
+#define GYRO_CONFIG     	0x1B  
+#define ACCEL_CONFIG    	0x1C  
+#define ACCEL_XOUT_H    	0x3B  
+#define ACCEL_XOUT_L    	0x3C  
+#define ACCEL_YOUT_H    	0x3D  
+#define ACCEL_YOUT_L    	0x3E  
+#define ACCEL_ZOUT_H    	0x3F  
+#define ACCEL_ZOUT_L    	0x40  
+#define TEMP_OUT_H      	0x41  
+#define TEMP_OUT_L      	0x42  
+#define GYRO_XOUT_H     	0x43  
+#define GYRO_XOUT_L     	0x44  
+#define GYRO_YOUT_H     	0x45  
+#define GYRO_YOUT_L     	0x46  
+#define GYRO_ZOUT_H     	0x47  
+#define GYRO_ZOUT_L     	0x48  
+#define PWR_MGMT_1      	0x6B
+#define WHO_AM_I 			0x75
+
+
+#define MPU_ADDR_AD0_LOW	0X68
+#define MPU_ADDR_AD0_HIGH	0X69
+
 
 #define MPU_NAME		"mpu6050"
 #define MPU_MAJOR		500
@@ -41,8 +50,13 @@
 struct mpu6050_device{
 	struct cdev	cdev;
 	struct i2c_client *client;
+	unsigned char dev_id;
 };
 
+
+
+int mpu6050_i2c_read(unsigned char addr, unsigned char reg, unsigned char len, unsigned char *value);
+int mpu6050_i2c_write(unsigned char addr, unsigned char reg, unsigned char len, unsigned char *value);
 
 #endif
 

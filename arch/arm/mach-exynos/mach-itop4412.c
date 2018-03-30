@@ -2118,33 +2118,7 @@ static struct i2c_board_info i2c_devs5[] __initdata = {
 #endif  //yulu for test sleep
 #endif
 #ifdef CONFIG_TC4_ICS
-#ifdef CONFIG_SENSORS_MPU6050
-	{
-                I2C_BOARD_INFO("mpu6050", 0x68),
-                .platform_data = &mpu6050_data,
-                .irq = EXYNOS4_GPX3(3),
-        },
-/*
-        {
-                I2C_BOARD_INFO("ak8975", 0x0C),
-                .platform_data = &inv_mpu_compass_data,
-                .irq = EXYNOS4_GPX1(4),
-        }
-*/
-#else
-	// gyro
-	{
-		I2C_BOARD_INFO(MPU_NAME, 0x68),
-		.irq = IRQ_EINT(27),
-		.platform_data = &mpu3050_data,
-	},
-	// accel
-	{
-		I2C_BOARD_INFO("bma250", (0x30>>1)),
-		//.irq = IRQ_EINT(24),// 25?
-		.platform_data = &inv_mpu_bma250_data,
-	},
-#endif
+
 #endif
 };
 
@@ -2194,7 +2168,7 @@ static struct tsc2007_platform_data tsc2007_info = {
 static struct i2c_board_info i2c_devs7[] __initdata = {
 
 #if defined(CONFIG_CPU_TYPE_SCP_ELITE) || defined(CONFIG_CPU_TYPE_POP_ELITE) || defined(CONFIG_CPU_TYPE_POP2G_ELITE)
-	/* add by cym 20130417 for TSC2007 TouchScreen */
+	/* add by cym 20130417 for TSC2007 TouchScreen 
 #ifdef CONFIG_TOUCHSCREEN_TSC2007
 	{
 		I2C_BOARD_INFO("tsc2007", 0x48),
@@ -2202,7 +2176,15 @@ static struct i2c_board_info i2c_devs7[] __initdata = {
 		.platform_data	= &tsc2007_info,
 		.irq = IRQ_EINT(0),
          }
+#endif*/
+#ifdef CONFIG_SENSORS_MPU6050
+		{
+					I2C_BOARD_INFO("mpu6050", 0x68),
+					.platform_data = &mpu6050_data,
+					.irq = EXYNOS4_GPX3(3),
+		},
 #endif
+
 	/* end add */
 #endif
 

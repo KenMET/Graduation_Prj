@@ -1,15 +1,16 @@
 #!/bin/sh
-A=/home/ken/workspace/exynos4412/exynos4412_Kernel_3.0
+A=/home/ken/workspace/exynos4412/Graduation_Prj
 B=/home/ken/workspace/exynos4412/tmp
 Count=0
 let Count++
 let Count--
 echo 'Copying new files......Please wait'
 
-find . -mtime -1 -regex ".*\.c\|.*\.h" > line
+#find "$A" -amin -10 -regex ".*\.c\|.*\.h" > line
+find "$A" -cmin -30 -type f > line
 for filename in `cat line`
 do
-TempName=${filename#.*/}
+TempName=${filename:46}
 if [ -e "$B"/"$TempName" ]; then
 Val1=$(md5sum "$filename"|cut -d ' ' -f1)
 Val2=$(md5sum "$B"/"$TempName"|cut -d ' ' -f1)
@@ -24,8 +25,8 @@ cp -rf "$filename" "$B"/"$TempName"
 let Count++
 fi
 done
-rm -rf "$A"/line
 
+rm -rf line
 echo "Copy files done... $Count file(s) are copyed."
 echo 'Entry into the compile directories...'
 cd  ../tmp
@@ -33,5 +34,5 @@ echo 'Building kernel image'
 make zImage
 echo 'Build successful...'
 echo 'Copying zImage to oe-build...'
-cp arch/arm/boot/zImage ../exynos4412_Kernel_3.0/oe-build/
+cp arch/arm/boot/zImage "$A"/oe-build/
 echo 'All Done...'

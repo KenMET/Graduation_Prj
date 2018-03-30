@@ -23,8 +23,67 @@
 
 #include "mpu6050.h"
 
+#define BUF_SIZE	20
 
 struct mpu6050_device *mpu6050;
+
+int mpu6050_i2c_read(u8 addr, u8 reg, u8 len, u8 *value)
+{
+	u8 txbuf[1] = { reg };
+	u8 rxbuf[BUF_SIZE] = { 0 };
+	struct i2c_msg msgs[] = {
+			{
+					.addr	= addr, 
+					.flags	= 0,	
+					.len	= len,
+					.buf	= txbuf,
+			},
+			{
+					.addr	= addr,
+					.flags	= I2C_M_RD,
+					.len	= len,
+					.buf	= rxbuf,
+			},
+	};
+	int ret, k;
+	ret = i2c_transfer(mpu6050->client->adapter, msgs, ARRAY_SIZE(msgs));
+	if (ret < 0)
+	{
+		printk("read reg (0x%02x) error, %d\n", reg, ret);
+	}
+	else
+	{
+		for(k=0; k<len; k++)
+			value[k] = rxbuf[k];
+	}
+	return ret;
+}
+
+  
+int mpu6050_i2c_write(unsigned char addr, unsigned char reg, unsigned char len, unsigned char *value)  
+{
+	u8 txbuf[BUF_SIZE] = { 0 };
+	struct i2c_msg msgs[] = {
+			{
+					.addr	= addr, 
+					.flags	= 0,	
+					.len	= len,
+					.buf	= txbuf,
+			},
+	};
+	int ret, k;
+
+	txbuf[0] = reg;
+	for(k=0; k<len; k++)
+		txbuf[k+1] = value[k];
+	
+	ret = i2c_transfer(mpu6050->client->adapter, msgs, ARRAY_SIZE(msgs));
+	if (ret < 0)
+	{
+		printk("write reg (0x%02x) error, %d\n", reg, ret);
+	}
+	return ret;
+}
 
 static int mpu6050_open(struct inode *inode, struct file *filp)
 {
@@ -47,6 +106,65 @@ static struct file_operations mpu6050_fops = {
     .release		= mpu6050_release,
     .unlocked_ioctl = mpu6050_ioctl,
 };
+
+int test_fun(void)
+{
+	int ret = -EINVAL;
+	unsigned char val[1] = { 0 };
+
+	
+	mpu6050->dev_id = MPU_ADDR_AD0_LOW;
+	ret = mpu6050_i2c_read(mpu6050->dev_id, WHO_AM_I, 1, val);
+	if (ret < 0){  
+        printk("MPU_ADDR_AD0_LOW read not ok");
+		mpu6050->dev_id = MPU_ADDR_AD0_HIGH;
+		ret = mpu6050_i2c_read(mpu6050->dev_id, WHO_AM_I, 1, val);
+		if (ret < 0){
+			printk("both addr read not ok"); 
+			return ret; 
+		} 
+    }
+	mpu6050->dev_id = val[0];
+	printk(KERN_ALERT "WHO_AM_I:0x%x\n", mpu6050->dev_id);
+
+	val[0] = 0x00;
+	ret = mpu6050_i2c_write(MPU_ADDR_AD0_LOW, PWR_MGMT_1, 1, val);
+	if (ret < 0) {	
+		printk("write PWR_MGMT_1 not ok");	
+		return ret;  
+	}
+
+	val[0] = 0x07;
+	ret = mpu6050_i2c_write(MPU_ADDR_AD0_LOW, SMPLRT_DIV, 1, val);
+	if (ret < 0) {	
+		printk("write SMPLRT_DIV not ok");	
+		return ret;  
+	}
+
+	val[0] = 0x06;
+	ret = mpu6050_i2c_write(MPU_ADDR_AD0_LOW, CONFIG, 1, val);
+	if (ret < 0) {	
+		printk("write CONFIG not ok");	
+		return ret;  
+	}
+
+	val[0] = 0xF8;
+	ret = mpu6050_i2c_write(MPU_ADDR_AD0_LOW, GYRO_CONFIG, 1, val);
+	if (ret < 0) {	
+		printk("write GYRO_CONFIG not ok");  
+		return ret;  
+	}
+
+	val[0] = 0x19;
+	ret = mpu6050_i2c_write(MPU_ADDR_AD0_LOW, ACCEL_CONFIG, 1, val);
+	if (ret < 0) {	
+		printk("write ACCEL_CONFIG not ok");  
+		return ret;  
+	}
+
+
+
+}
 
 static int mpu6050_probe(struct i2c_client *client, const struct i2c_device_id *id)
 {
@@ -87,6 +205,11 @@ static int mpu6050_probe(struct i2c_client *client, const struct i2c_device_id *
 		goto add_cdev_failed;	
 	}
 
+	test_fun();
+/*
+mpu_init()
+
+*/
 
 	return 0;
 
@@ -141,7 +264,7 @@ static void __exit mpu6050_exit(void)
 	i2c_del_driver(&mpu6050_driver);
 } 
 
-module_init(mpu6050_init);
+late_initcall(mpu6050_init);
 module_exit(mpu6050_exit);
 MODULE_AUTHOR("Ken");
 MODULE_DESCRIPTION("MPU6050 driver demo");
