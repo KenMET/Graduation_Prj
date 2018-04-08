@@ -44,13 +44,13 @@ static struct s3cfb_lcd wa101 = {
 	.height = 800,
 #else
 /* add by cym 20130417 for TSC2007 TouchScreen */
-#ifdef CONFIG_TOUCHSCREEN_TSC2007
-	.width	= 800,
-	.height = 480,
-#else
-	.width	= 1024,
-	.height = 768,
-#endif
+//#ifdef CONFIG_TOUCHSCREEN_TSC2007
+	.width	= 480,
+	.height = 272,
+//#else
+	//.width	= 1024,
+	//.height = 768,
+//#endif
 #endif
 	.bpp	= 24,
 	.freq	= 70,//70,
@@ -96,7 +96,7 @@ void s3cfb_setup_lcd()
 {
 #if 1
 	int type = get_lcd_type();
-	//printk("************** type = %d\n", type);
+	printk("************** lcd type = %d\n", type);
 	if(0x0 == type)        //9.7
         {
 		//printk("99999999999999999999999999999999\n");

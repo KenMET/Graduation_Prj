@@ -119,22 +119,25 @@ int s3cfb_draw_logo(struct fb_info *fb)
                 lcd_size = 43;
         }
 
-	if(lcd_size != 70)
-	{
-		top = 170;
-		left = 230;
-	}
-	else
-	{
-		top = 400;
-		left = 110;
-	}
-		
+	//if(lcd_size != 70)
+	//{
+	//	top = 170;
+	//	left = 230;
+	//}
+	//else
+	//{
+	//	top = 400;
+	//	left = 110;
+	//}
+
+	top = 0;
+	left = 0;
+	
 	index = 0;
 	
-	if(lcd_size != 43){
-	for (i = 0; i < 480; i++) {
-		for (j = 0; j < 640; j++) {
+	//if(lcd_size != 43){
+	for (i = 0; i < 270; i++) {
+		for (j = 0; j < 480; j++) {
 			memset(fb->screen_base + (i + top) * line + (j + left) * 4 + 0, pLog[index], 1);//B
 			memset(fb->screen_base + (i + top) * line + (j + left) * 4 + 1, pLog[index+1], 1);//G
 			memset(fb->screen_base + (i + top) * line + (j + left) * 4 + 2, pLog[index+2], 1);//R
@@ -142,7 +145,7 @@ int s3cfb_draw_logo(struct fb_info *fb)
 			index += 3;
 		}
 	}
-	}
+	//}
 	
 #endif
 #endif

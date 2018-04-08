@@ -7,7 +7,7 @@ let Count--
 echo 'Copying new files......Please wait'
 
 #find "$A" -amin -10 -regex ".*\.c\|.*\.h" > line
-find "$A" -cmin -30 -type f > line
+find "$A" -cmin -150 -type f > line
 for filename in `cat line`
 do
 TempName=${filename:46}
