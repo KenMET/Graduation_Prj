@@ -1,0 +1,14 @@
+QMAKE_DEFAULT_INCDIRS = \
+    /home/ken/workspace/tools/arm-2009q3/arm-none-linux-gnueabi/include/c++/4.8.3 \
+    /home/ken/workspace/tools/arm-2009q3/arm-none-linux-gnueabi/include/c++/4.8.3/arm-none-linux-gnueabi \
+    /home/ken/workspace/tools/arm-2009q3/arm-none-linux-gnueabi/include/c++/4.8.3/backward \
+    /home/ken/workspace/tools/arm-2009q3/lib/gcc/arm-none-linux-gnueabi/4.8.3/include \
+    /home/ken/workspace/tools/arm-2009q3/lib/gcc/arm-none-linux-gnueabi/4.8.3/include-fixed \
+    /home/ken/workspace/tools/arm-2009q3/arm-none-linux-gnueabi/include \
+    /home/ken/workspace/tools/arm-2009q3/arm-none-linux-gnueabi/libc/usr/include
+QMAKE_DEFAULT_LIBDIRS = \
+    /home/ken/workspace/tools/arm-2009q3/lib/gcc/arm-none-linux-gnueabi/4.8.3 \
+    /home/ken/workspace/tools/arm-2009q3/lib/gcc \
+    /home/ken/workspace/tools/arm-2009q3/arm-none-linux-gnueabi/lib \
+    /home/ken/workspace/tools/arm-2009q3/arm-none-linux-gnueabi/libc/lib \
+    /home/ken/workspace/tools/arm-2009q3/arm-none-linux-gnueabi/libc/usr/lib
