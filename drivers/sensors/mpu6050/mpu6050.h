@@ -27,20 +27,6 @@
 
 #define min(a,b)								((a<b)?a:b)
 
-/* When entering motion interrupt mode, the driver keeps track of the
- * previous state so that it can be restored at a later time.
- * TODO: This is tacky. Fix it.
- */
-struct motion_int_cache_s {
-    unsigned short gyro_fsr;
-    unsigned char accel_fsr;
-    unsigned short lpf;
-    unsigned short sample_rate;
-    unsigned char sensors_on;
-    unsigned char fifo_sensors;
-    unsigned char dmp_on;
-};
-
 /* Cached chip configuration data.
  * TODO: A lot of these can be handled with a bitmask.
  */
@@ -71,7 +57,6 @@ struct chip_cfg_s {
     unsigned char lp_accel_mode;
     /* 1 if interrupts are only triggered on motion events. */
     unsigned char int_motion_only;
-    struct motion_int_cache_s cache;
     /* 1 for active low interrupts. */
     unsigned char active_low_int;
     /* 1 for latched interrupts. */
@@ -96,8 +81,8 @@ struct dmp_s {
 struct mpu6050_device{
 	struct cdev	cdev;
 	struct i2c_client *client;
-	struct chip_cfg_s chip_cfg;
-	struct dmp_s dmp;
+	struct chip_cfg_s *chip_cfg;
+	struct dmp_s *dmp;
 	unsigned char dev_id;
 };
 

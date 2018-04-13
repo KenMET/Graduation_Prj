@@ -114,7 +114,7 @@ int mpu_read_mem(unsigned short mem_addr, unsigned short length, unsigned char *
 
 	if (!data)
 		return -1;
-	if (!mpu6050->chip_cfg.sensors)
+	if (!mpu6050->chip_cfg->sensors)
 		return -1;
 
 	tmp[0] = (unsigned char)(mem_addr >> 8);
@@ -147,7 +147,7 @@ int mpu_write_mem(unsigned short mem_addr, unsigned short length,
 
 	if (!data)
 		return -1;
-	if (!mpu6050->chip_cfg.sensors)
+	if (!mpu6050->chip_cfg->sensors)
 		return -1;
 
 	tmp[0] = (unsigned char)(mem_addr >> 8);
@@ -177,7 +177,7 @@ int mpu_set_gyro_fsr(unsigned short fsr)
 	int ret = -EINVAL;
 	unsigned char data;
 
-	if (!(mpu6050->chip_cfg.sensors))
+	if (!(mpu6050->chip_cfg->sensors))
 		return -1;
 
 	switch (fsr) {
@@ -188,7 +188,7 @@ int mpu_set_gyro_fsr(unsigned short fsr)
 		default:	return -1;
 	}
 
-	if (mpu6050->chip_cfg.gyro_fsr == (data >> 3))
+	if (mpu6050->chip_cfg->gyro_fsr == (data >> 3))
 		return 0;
 
 	ret = mpu_i2c_write(mpu6050->dev_id, MPU_GYRO_CONFIG, 1, &data);
@@ -197,7 +197,7 @@ int mpu_set_gyro_fsr(unsigned short fsr)
 		return ret;  
 	}
 
-	mpu6050->chip_cfg.gyro_fsr = data >> 3;
+	mpu6050->chip_cfg->gyro_fsr = data >> 3;
 	return 0;
 }
 
@@ -206,7 +206,7 @@ int mpu_set_accel_fsr(unsigned char fsr)
 	int ret = -EINVAL;
 	unsigned char data;
 
-	if (!(mpu6050->chip_cfg.sensors))
+	if (!(mpu6050->chip_cfg->sensors))
 		return -1;
 
 	switch (fsr) {
@@ -217,7 +217,7 @@ int mpu_set_accel_fsr(unsigned char fsr)
 		default:	return -1;
 	}
 
-	if (mpu6050->chip_cfg.accel_fsr == (data >> 3))
+	if (mpu6050->chip_cfg->accel_fsr == (data >> 3))
 		return 0;
 
 	ret = mpu_i2c_write(mpu6050->dev_id, MPU_ACCEL_CONFIG, 1, &data);
@@ -226,7 +226,7 @@ int mpu_set_accel_fsr(unsigned char fsr)
 		return ret;  
 	}
 
-	mpu6050->chip_cfg.accel_fsr = data >> 3;
+	mpu6050->chip_cfg->accel_fsr = data >> 3;
 
 	return 0;
 }
@@ -236,7 +236,7 @@ int mpu_set_lpf(unsigned short lpf)
 	int ret = -EINVAL;
 	unsigned char data;
 
-	if (!(mpu6050->chip_cfg.sensors))
+	if (!(mpu6050->chip_cfg->sensors))
 		return -1;
 
 	if (lpf >= 188)				data = INV_FILTER_188HZ;
@@ -246,7 +246,7 @@ int mpu_set_lpf(unsigned short lpf)
 	else if (lpf >= 10)			data = INV_FILTER_10HZ;
 	else									data = INV_FILTER_5HZ;
 
-	if (mpu6050->chip_cfg.lpf == data)
+	if (mpu6050->chip_cfg->lpf == data)
 		return 0;
 
 	ret = mpu_i2c_write(mpu6050->dev_id, MPU_LPF, 1, &data);
@@ -255,7 +255,7 @@ int mpu_set_lpf(unsigned short lpf)
 		return ret;  
 	}
 
-	mpu6050->chip_cfg.lpf = data;
+	mpu6050->chip_cfg->lpf = data;
 	return 0;
 }
 
@@ -263,7 +263,7 @@ int mpu_set_int_latched(unsigned char enable)
 {
 	int ret = -EINVAL;
 	unsigned char tmp;
-	if (mpu6050->chip_cfg.latched_int == enable)
+	if (mpu6050->chip_cfg->latched_int == enable)
 		return 0;
 
 	if (enable)
@@ -271,9 +271,9 @@ int mpu_set_int_latched(unsigned char enable)
 	else
 		tmp = 0;
 
-	if (mpu6050->chip_cfg.bypass_mode)
+	if (mpu6050->chip_cfg->bypass_mode)
 		tmp |= BIT_BYPASS_EN;
-	if (mpu6050->chip_cfg.active_low_int)
+	if (mpu6050->chip_cfg->active_low_int)
 		tmp |= BIT_ACTL;
 
 	ret = mpu_i2c_write(mpu6050->dev_id, MPU_INT_PIN_CONFIG, 1, &tmp);
@@ -282,7 +282,7 @@ int mpu_set_int_latched(unsigned char enable)
 		return ret;  
 	}
 
-	mpu6050->chip_cfg.latched_int = enable;
+	mpu6050->chip_cfg->latched_int = enable;
 	return 0;
 }
 
@@ -291,7 +291,7 @@ static int mpu_set_int_status(unsigned char enable)
 	int ret = -EINVAL;
 	unsigned char tmp;
 
-	if (mpu6050->chip_cfg.dmp_on) {
+	if (mpu6050->chip_cfg->dmp_on) {
 		if (enable)
 			tmp = BIT_DMP_INT_EN;
 		else
@@ -303,11 +303,11 @@ static int mpu_set_int_status(unsigned char enable)
 			return ret;  
 		}
 
-		mpu6050->chip_cfg.int_enable = tmp;
+		mpu6050->chip_cfg->int_enable = tmp;
 	}else {
-		if (!mpu6050->chip_cfg.sensors)
+		if (!mpu6050->chip_cfg->sensors)
 			return -1;
-		if (enable && mpu6050->chip_cfg.int_enable)
+		if (enable && mpu6050->chip_cfg->int_enable)
 			return 0;
 		if (enable)
 			tmp = BIT_DATA_RDY_EN;
@@ -320,7 +320,7 @@ static int mpu_set_int_status(unsigned char enable)
 			return ret;  
 		}
 
-		mpu6050->chip_cfg.int_enable = tmp;
+		mpu6050->chip_cfg->int_enable = tmp;
 	}
 	return 0;
 }
@@ -330,7 +330,7 @@ int mpu_set_bypass(unsigned char bypass_on)
 	int ret = -EINVAL;
 	unsigned char tmp;
 
-	if (mpu6050->chip_cfg.bypass_mode == bypass_on)
+	if (mpu6050->chip_cfg->bypass_mode == bypass_on)
 		return 0;
 
 	if (bypass_on) {
@@ -349,9 +349,9 @@ int mpu_set_bypass(unsigned char bypass_on)
 		msleep(3);
 
 		tmp = BIT_BYPASS_EN;
-		if (mpu6050->chip_cfg.active_low_int)
+		if (mpu6050->chip_cfg->active_low_int)
 			tmp |= BIT_ACTL;
-		if (mpu6050->chip_cfg.latched_int)
+		if (mpu6050->chip_cfg->latched_int)
 			tmp |= BIT_LATCH_EN | BIT_ANY_RD_CLR;
 		ret = mpu_i2c_write(mpu6050->dev_id, MPU_INT_PIN_CONFIG, 1, &tmp);
 		if (ret < 0) {	
@@ -365,7 +365,7 @@ int mpu_set_bypass(unsigned char bypass_on)
 			mpu_log("read user_ctrl not ok");	
 			return ret;  
 		}
-		if (mpu6050->chip_cfg.sensors & INV_XYZ_COMPASS)
+		if (mpu6050->chip_cfg->sensors & INV_XYZ_COMPASS)
 			tmp |= BIT_AUX_IF_EN;
 		else
 			tmp &= ~BIT_AUX_IF_EN;
@@ -377,11 +377,11 @@ int mpu_set_bypass(unsigned char bypass_on)
 
 		msleep(3);
 
-		if (mpu6050->chip_cfg.active_low_int)
+		if (mpu6050->chip_cfg->active_low_int)
 			tmp = BIT_ACTL;
 		else
 			tmp = 0;
-		if (mpu6050->chip_cfg.latched_int)
+		if (mpu6050->chip_cfg->latched_int)
 			tmp |= BIT_LATCH_EN | BIT_ANY_RD_CLR;
 		ret = mpu_i2c_write(mpu6050->dev_id, MPU_INT_PIN_CONFIG, 1, &tmp);
 		if (ret < 0) {	
@@ -389,7 +389,7 @@ int mpu_set_bypass(unsigned char bypass_on)
 			return ret;  
 		}
 	}
-	mpu6050->chip_cfg.bypass_mode = bypass_on;
+	mpu6050->chip_cfg->bypass_mode = bypass_on;
 
 	return 0;
 }
@@ -399,13 +399,13 @@ int mpu_set_sample_rate(unsigned short rate)
 	int ret = -EINVAL;
 	unsigned char data;
 
-	if (!(mpu6050->chip_cfg.sensors))
+	if (!(mpu6050->chip_cfg->sensors))
 		return -1;
 
-	if (mpu6050->chip_cfg.dmp_on)
+	if (mpu6050->chip_cfg->dmp_on)
 		return -1;
 	else {
-		if (mpu6050->chip_cfg.lp_accel_mode) {
+		if (mpu6050->chip_cfg->lp_accel_mode) {
 			if (rate && (rate <= 40)) {
 				/* Just stay in low-power accel mode. */
 				mpu_lp_accel_mode(rate);
@@ -429,10 +429,10 @@ int mpu_set_sample_rate(unsigned short rate)
 			return ret;  
 		}
 
-		mpu6050->chip_cfg.sample_rate = 1000 / (1 + data);
+		mpu6050->chip_cfg->sample_rate = 1000 / (1 + data);
 
 		/* Automatically set LPF to 1/2 sampling rate. */
-		mpu_set_lpf(mpu6050->chip_cfg.sample_rate >> 1);
+		mpu_set_lpf(mpu6050->chip_cfg->sample_rate >> 1);
 		return 0;
 	}
 }
@@ -454,7 +454,7 @@ int mpu_set_sensors(unsigned char sensors)
 		return ret;  
 	}
 
-	mpu6050->chip_cfg.clk_src = data & ~BIT_SLEEP;
+	mpu6050->chip_cfg->clk_src = data & ~BIT_SLEEP;
 
 	data = 0;
 	if (!(sensors & INV_X_GYRO))
@@ -467,7 +467,7 @@ int mpu_set_sensors(unsigned char sensors)
 		data |= BIT_STBY_XYZA;
 	ret = mpu_i2c_write(mpu6050->dev_id, MPU_PWR_MGMT2, 1, &data);
 	if (ret < 0) {
-		mpu6050->chip_cfg.sensors = 0;
+		mpu6050->chip_cfg->sensors = 0;
 		mpu_log("write pwr_mgmt_2 not ok");	
 		return ret;  
 	}
@@ -475,8 +475,8 @@ int mpu_set_sensors(unsigned char sensors)
 	if (sensors && (sensors != INV_XYZ_ACCEL))
 		mpu_set_int_latched(0);/* Latched interrupts only used in LP accel mode. */
 
-	mpu6050->chip_cfg.sensors = sensors;
-	mpu6050->chip_cfg.lp_accel_mode = 0;
+	mpu6050->chip_cfg->sensors = sensors;
+	mpu6050->chip_cfg->lp_accel_mode = 0;
 	mdelay(50);
 	return 0;
 }
@@ -498,7 +498,7 @@ int dmp_set_fifo_rate(unsigned short rate)
 	if (mpu_write_mem(CFG_6, 12, (unsigned char*)regs_end))
 		return -1;
 
-	dmp.fifo_rate = rate;
+	mpu6050->dmp->fifo_rate = rate;
 	return 0;
 }
 
@@ -506,18 +506,18 @@ int mpu_set_dmp_state(unsigned char enable)
 {
 	int ret = -EINVAL;
 	unsigned char tmp;
-	if (mpu6050->chip_cfg.dmp_on == enable)
+	if (mpu6050->chip_cfg->dmp_on == enable)
 		return 0;
 
 	if (enable) {
-		if (!mpu6050->chip_cfg.dmp_loaded)
+		if (!mpu6050->chip_cfg->dmp_loaded)
 			return -1;
 		/* Disable data ready interrupt. */
 		mpu_set_int_status(0);
 		/* Disable bypass mode. */
 		mpu_set_bypass(0);
 		/* Keep constant sample rate, FIFO rate controlled by DMP. */
-		mpu_set_sample_rate(mpu6050->chip_cfg.dmp_sample_rate);
+		mpu_set_sample_rate(mpu6050->chip_cfg->dmp_sample_rate);
 		/* Remove FIFO elements. */
 		tmp = 0;
 
@@ -527,7 +527,7 @@ int mpu_set_dmp_state(unsigned char enable)
 			return ret;  
 		}
 
-		mpu6050->chip_cfg.dmp_on = 1;
+		mpu6050->chip_cfg->dmp_on = 1;
 		/* Enable DMP interrupt. */
 		mpu_set_int_status(1);
 		mpu_reset_fifo();
@@ -535,13 +535,13 @@ int mpu_set_dmp_state(unsigned char enable)
 		/* Disable DMP interrupt. */
 		mpu_set_int_status(0);
 		/* Restore FIFO settings. */
-		tmp = mpu6050->chip_cfg.fifo_enable;
+		tmp = mpu6050->chip_cfg->fifo_enable;
 		ret = mpu_i2c_write(mpu6050->dev_id, MPU_FIFO_EN, 1, &tmp);
 		if (ret < 0) {	
 			mpu_log("write fifo_en not ok");	
 			return ret;  
 		}
-		mpu6050->chip_cfg.dmp_on = 0;
+		mpu6050->chip_cfg->dmp_on = 0;
 		mpu_reset_fifo();
 	}
 	return 0;
@@ -566,7 +566,7 @@ int mpu_get_id(void)
 
 int mpu_get_gyro_fsr(unsigned short *fsr)
 {
-	switch (mpu6050->chip_cfg.gyro_fsr) {
+	switch (mpu6050->chip_cfg->gyro_fsr) {
 		case INV_FSR_250DPS:
 			fsr[0] = 250;
 			break;
@@ -588,7 +588,7 @@ int mpu_get_gyro_fsr(unsigned short *fsr)
 
 int mpu_get_accel_fsr(unsigned char *fsr)
 {
-	switch (mpu6050->chip_cfg.accel_fsr) {
+	switch (mpu6050->chip_cfg->accel_fsr) {
 		case INV_FSR_2G:
 			fsr[0] = 2;
 			break;
@@ -604,14 +604,14 @@ int mpu_get_accel_fsr(unsigned char *fsr)
 		default:
 			return -1;
 	}
-	if (mpu6050->chip_cfg.accel_half)
+	if (mpu6050->chip_cfg->accel_half)
 		fsr[0] <<= 1;
 	return 0;
 }
 
 int mpu_get_lpf(unsigned short *lpf)
 {
-	switch (mpu6050->chip_cfg.lpf) {
+	switch (mpu6050->chip_cfg->lpf) {
 		case INV_FILTER_188HZ:
 			lpf[0] = 188;
 			break;
@@ -641,16 +641,16 @@ int mpu_get_lpf(unsigned short *lpf)
 
 int mpu_get_sample_rate(unsigned short *rate)
 {
-	if (mpu6050->chip_cfg.dmp_on)
+	if (mpu6050->chip_cfg->dmp_on)
 		return -1;
 	else
-		rate[0] = mpu6050->chip_cfg.sample_rate;
+		rate[0] = mpu6050->chip_cfg->sample_rate;
 	return 0;
 }
 
 int mpu_get_fifo_config(unsigned char *sensors)
 {
-	sensors[0] = mpu6050->chip_cfg.fifo_enable;
+	sensors[0] = mpu6050->chip_cfg->fifo_enable;
 	return 0;
 }
 
@@ -659,7 +659,7 @@ int mpu_reset_fifo(void)
 	int ret = -EINVAL;
 	unsigned char data;
 
-	if (!(mpu6050->chip_cfg.sensors))
+	if (!(mpu6050->chip_cfg->sensors))
 		return -1;
 
 	data = 0;
@@ -681,7 +681,7 @@ int mpu_reset_fifo(void)
 		return ret;  
 	}
 
-	if (mpu6050->chip_cfg.dmp_on) {
+	if (mpu6050->chip_cfg->dmp_on) {
 		data = BIT_FIFO_RST | BIT_DMP_RST;
 		ret = mpu_i2c_write(mpu6050->dev_id, MPU_USER_CTRL, 1, &data);
 		if (ret < 0) {	
@@ -692,7 +692,7 @@ int mpu_reset_fifo(void)
 		msleep(50);
 
 		data = BIT_DMP_EN | BIT_FIFO_EN;
-		if (mpu6050->chip_cfg.sensors & INV_XYZ_COMPASS)
+		if (mpu6050->chip_cfg->sensors & INV_XYZ_COMPASS)
 			data |= BIT_AUX_IF_EN;
 		ret = mpu_i2c_write(mpu6050->dev_id, MPU_USER_CTRL, 1, &data);
 		if (ret < 0) {	
@@ -700,7 +700,7 @@ int mpu_reset_fifo(void)
 			return ret;  
 		}
 
-		if (mpu6050->chip_cfg.int_enable)
+		if (mpu6050->chip_cfg->int_enable)
 			data = BIT_DMP_INT_EN;
 		else
 			data = 0;
@@ -724,7 +724,7 @@ int mpu_reset_fifo(void)
 			return ret;  
 		}
 
-		if (mpu6050->chip_cfg.bypass_mode || !(mpu6050->chip_cfg.sensors & INV_XYZ_COMPASS))
+		if (mpu6050->chip_cfg->bypass_mode || !(mpu6050->chip_cfg->sensors & INV_XYZ_COMPASS))
 			data = BIT_FIFO_EN;
 		else
 			data = BIT_FIFO_EN | BIT_AUX_IF_EN;
@@ -735,7 +735,7 @@ int mpu_reset_fifo(void)
 		}
 
 		msleep(50);
-		if (mpu6050->chip_cfg.int_enable)
+		if (mpu6050->chip_cfg->int_enable)
 			data = BIT_DATA_RDY_EN;
 		else
 			data = 0;
@@ -745,7 +745,7 @@ int mpu_reset_fifo(void)
 			return ret;  
 		}
 		
-		ret = mpu_i2c_write(mpu6050->dev_id, MPU_FIFO_EN, 1, &mpu6050->chip_cfg.fifo_enable);
+		ret = mpu_i2c_write(mpu6050->dev_id, MPU_FIFO_EN, 1, &mpu6050->chip_cfg->fifo_enable);
 		if (ret < 0) {	
 			mpu_log("write fifo_en not ok");	
 			return ret;  
@@ -762,24 +762,24 @@ int mpu_configure_fifo(unsigned char sensors)
 	/* Compass data isn't going into the FIFO. Stop trying. */
 	sensors &= ~INV_XYZ_COMPASS;
 
-	if (mpu6050->chip_cfg.dmp_on)
+	if (mpu6050->chip_cfg->dmp_on)
 		return 0;
 	else {
-		if (!(mpu6050->chip_cfg.sensors))
+		if (!(mpu6050->chip_cfg->sensors))
 			return -1;
-		prev = mpu6050->chip_cfg.fifo_enable;
-		mpu6050->chip_cfg.fifo_enable = sensors & mpu6050->chip_cfg.sensors;
-		if (mpu6050->chip_cfg.fifo_enable != sensors)
+		prev = mpu6050->chip_cfg->fifo_enable;
+		mpu6050->chip_cfg->fifo_enable = sensors & mpu6050->chip_cfg->sensors;
+		if (mpu6050->chip_cfg->fifo_enable != sensors)
 			result = -1;		/* You're not getting what you asked for. Some sensors are asleep.*/
 		else
 			result = 0;
-		if (sensors || mpu6050->chip_cfg.lp_accel_mode)
+		if (sensors || mpu6050->chip_cfg->lp_accel_mode)
 			mpu_set_int_status(1);
 		else
 			mpu_set_int_status(0);
 		if (sensors) {
 			if (mpu_reset_fifo()) {
-				mpu6050->chip_cfg.fifo_enable = prev;
+				mpu6050->chip_cfg->fifo_enable = prev;
 				return -1;
 			}
 		}
@@ -806,7 +806,7 @@ int mpu_lp_accel_mode(unsigned char rate)
 			return ret;  
 		}
 
-		mpu6050->chip_cfg.lp_accel_mode = 0;
+		mpu6050->chip_cfg->lp_accel_mode = 0;
 		return 0;
 	}
 	/* For LP accel, we automatically configure the hardware to produce latched
@@ -839,9 +839,9 @@ int mpu_lp_accel_mode(unsigned char rate)
 		return ret;  
 	}
 
-	mpu6050->chip_cfg.sensors = INV_XYZ_ACCEL;
-	mpu6050->chip_cfg.clk_src = 0;
-	mpu6050->chip_cfg.lp_accel_mode = 1;
+	mpu6050->chip_cfg->sensors = INV_XYZ_ACCEL;
+	mpu6050->chip_cfg->clk_src = 0;
+	mpu6050->chip_cfg->lp_accel_mode = 1;
 	mpu_configure_fifo(0);
 
 	return 0;
@@ -857,7 +857,7 @@ int mpu_load_firmware(unsigned short length, const unsigned char *firmware,
 #define LOAD_CHUNK  (16)
 	unsigned char cur[LOAD_CHUNK], tmp[2];
 
-	if (mpu6050->chip_cfg.dmp_loaded)
+	if (mpu6050->chip_cfg->dmp_loaded)
 		return -1;	/* DMP should only be loaded once. */
 
 	if (!firmware)
@@ -877,13 +877,13 @@ int mpu_load_firmware(unsigned short length, const unsigned char *firmware,
 	tmp[1] = start_addr & 0xFF;
 	ret = mpu_i2c_write(mpu6050->dev_id, MPU_PRGM_START_H, 2, tmp);
 	if (ret < 0) {
-		mpu6050->chip_cfg.sensors = 0;
+		mpu6050->chip_cfg->sensors = 0;
 		mpu_log("write prgm_start_h not ok");	
 		return ret;  
 	}
 
-	mpu6050->chip_cfg.dmp_loaded = 1;
-	mpu6050->chip_cfg.dmp_sample_rate = sample_rate;
+	mpu6050->chip_cfg->dmp_loaded = 1;
+	mpu6050->chip_cfg->dmp_sample_rate = sample_rate;
 	return 0;
 }
 
@@ -957,7 +957,7 @@ int dmp_set_orientation(unsigned short orient)
 		return -1;
 	if (mpu_write_mem(FCFG_7, 3, accel_regs))
 		return -1;
-	dmp.orient = orient;
+	mpu6050->dmp->orient = orient;
 	return 0;
 }
 
@@ -1246,18 +1246,18 @@ int dmp_set_feature_status(unsigned short mask)
 		dmp_set_6x_lp_quat_status(0);
 
 	/* Pedometer is always enabled. */
-	dmp.feature_mask = mask | DMP_FEATURE_PEDOMETER;
+	mpu6050->dmp->feature_mask = mask | DMP_FEATURE_PEDOMETER;
 	mpu_reset_fifo();
 
-	dmp.packet_length = 0;
+	mpu6050->dmp->packet_length = 0;
 	if (mask & DMP_FEATURE_SEND_RAW_ACCEL)
-		dmp.packet_length += 6;
+		mpu6050->dmp->packet_length += 6;
 	if (mask & DMP_FEATURE_SEND_ANY_GYRO)
-		dmp.packet_length += 6;
+		mpu6050->dmp->packet_length += 6;
 	if (mask & (DMP_FEATURE_LP_QUAT | DMP_FEATURE_6X_LP_QUAT))
-		dmp.packet_length += 16;
+		mpu6050->dmp->packet_length += 16;
 	if (mask & (DMP_FEATURE_TAP | DMP_FEATURE_ANDROID_ORIENT))
-		dmp.packet_length += 4;
+		mpu6050->dmp->packet_length += 4;
 
 	return 0;
 }
@@ -1268,8 +1268,18 @@ int dmp_load_motion_driver_firmware(void)
 					DMP_SAMPLE_RATE);
 }
 
-void mpu_var_init(mpu6050_device *mpu)
+int mpu_var_init(mpu6050_device *mpu)
 {
+	int err = -EINVAL;
+	struct dmp_s *dmp;
+	struct chip_cfg_s *chip_cfg;
+	
+	dmp = kzalloc(sizeof(*dmp), GFP_KERNEL);
+	if (dmp == NULL) {  
+		err = -ENODEV;	 
+		mpu_log("dmp_s kzalloc failed\n");
+		goto dmp_mem_fail;
+	}
 	mpu->dmp->tap_cb = NULL;
 	mpu->dmp->android_orient_cb = NULL;
 	mpu->dmp->orient = 0;
@@ -1277,27 +1287,36 @@ void mpu_var_init(mpu6050_device *mpu)
 	mpu->dmp->fifo_rate = 0;
 	mpu->dmp->packet_length = 0;
 
-    /* Set to invalid values to ensure no I2C writes are skipped. */
-    mpu->chip_cfg.sensors = 0xFF;
-    mpu->chip_cfg.gyro_fsr = 0xFF;
-    mpu->chip_cfg.accel_fsr = 0xFF;
-    mpu->chip_cfg.lpf = 0xFF;
-    mpu->chip_cfg.sample_rate = 0xFFFF;
-    mpu->chip_cfg.fifo_enable = 0xFF;
-    mpu->chip_cfg.bypass_mode = 0xFF;
+	chip_cfg = kzalloc(sizeof(*chip_cfg), GFP_KERNEL);
+	if (dmp == NULL) {  
+		err = -ENODEV;	 
+		mpu_log("dmp_s kzalloc failed\n");
+		goto chip_cfg_mem_fail;
+	}
+	/* Set to invalid values to ensure no I2C writes are skipped. */
+	mpu->chip_cfg->sensors = 0xFF;
+	mpu->chip_cfg->gyro_fsr = 0xFF;
+	mpu->chip_cfg->accel_fsr = 0xFF;
+	mpu->chip_cfg->lpf = 0xFF;
+	mpu->chip_cfg->sample_rate = 0xFFFF;
+	mpu->chip_cfg->fifo_enable = 0xFF;
+	mpu->chip_cfg->bypass_mode = 0xFF;
 
-    /* mpu_set_sensors always preserves this setting. */
-    mpu->chip_cfg.clk_src = INV_CLK_PLL;
-    /* Handled in next call to mpu_set_bypass. */
-    mpu->chip_cfg.active_low_int = 0;
-    mpu->chip_cfg.latched_int = 0;
-    mpu->chip_cfg.int_motion_only = 0;
-    mpu->chip_cfg.lp_accel_mode = 0;
-    memset(&mpu->chip_cfg.cache, 0, sizeof(mpu->chip_cfg.cache));
-    mpu->chip_cfg.dmp_on = 0;
-    mpu->chip_cfg.dmp_loaded = 0;
-    mpu->chip_cfg.dmp_sample_rate = 0;
-	
+	/* mpu_set_sensors always preserves this setting. */
+	mpu->chip_cfg->clk_src = INV_CLK_PLL;
+	/* Handled in next call to mpu_set_bypass. */
+	mpu->chip_cfg->active_low_int = 0;
+	mpu->chip_cfg->latched_int = 0;
+	mpu->chip_cfg->int_motion_only = 0;
+	mpu->chip_cfg->lp_accel_mode = 0;
+	mpu->chip_cfg->dmp_on = 0;
+	mpu->chip_cfg->dmp_loaded = 0;
+	mpu->chip_cfg->dmp_sample_rate = 0;
+
+chip_cfg_mem_fail:
+	kfree(dmp);
+dmp_mem_fail:
+	return -EINVAL;
 }
 
 int mpu_dmp_init(void)
@@ -1337,9 +1356,9 @@ int mpu_dmp_init(void)
 	if (rev) {
 		/* Congrats, these parts are better. */
 		if (rev == 1)
-		mpu6050->chip_cfg.accel_half = 1;
+		mpu6050->chip_cfg->accel_half = 1;
 		else if (rev == 2)
-		mpu6050->chip_cfg.accel_half = 0;
+		mpu6050->chip_cfg->accel_half = 0;
 		else
 		return -1;
 	} else {
@@ -1352,9 +1371,9 @@ int mpu_dmp_init(void)
 		if (!rev) {
 			return -1;
 		} else if (rev == 4) {
-			mpu6050->chip_cfg.accel_half = 1;
+			mpu6050->chip_cfg->accel_half = 1;
 		} else
-			mpu6050->chip_cfg.accel_half = 0;
+			mpu6050->chip_cfg->accel_half = 0;
 	}
 
 	if (mpu_set_gyro_fsr(2000))
@@ -1453,11 +1472,11 @@ static int mpu_probe(struct i2c_client *client, const struct i2c_device_id *id)
 	}
 	
 	mpu6050 = kzalloc(sizeof(*mpu6050), GFP_KERNEL);  
-    if (mpu6050 == NULL) {  
-        err = -ENODEV;	 
+	if (mpu6050 == NULL) {  
+		err = -ENODEV;	 
 		dev_err(&client->dev, "probe kzalloc failed\n");
 		goto kzalloc_failed;
-    }
+	}
 
 	mpu6050->client = client;
 
