@@ -280,9 +280,10 @@
 #define GYRO_ZOUT_H     	0x47  
 #define GYRO_ZOUT_L     	0x48  
 #define PWR_MGMT_1      	0x6B
-#define WHO_AM_I 			0x75
+#define WHO_AM_I 				0x75
 
 #define DEFAULT_MPU_HZ		200
+#define MAX_PACKET_LENGTH   32
 
 #define MPU_ADDR_AD0_LOW	0X68
 #define MPU_ADDR_AD0_HIGH	0X69
