@@ -18,14 +18,14 @@
 
 #define mpu_log(...)		printk(KERN_ALERT __VA_ARGS__)
 
-#define BUF_SIZE							20
+#define BUF_SIZE			32
 
 #define MPU_ADDR_AD0_LOW	0X68
 #define MPU_ADDR_AD0_HIGH	0X69
 
-#define MPU_NAME						"mpu6050"
-
-#define min(a,b)								((a<b)?a:b)
+#define MPU_NAME			"mpu6050"
+#define	MPU_MAJOR			500
+#define	MPU_MINOR			0
 
 /* Cached chip configuration data.
  * TODO: A lot of these can be handled with a bitmask.
@@ -86,9 +86,46 @@ struct mpu6050_device{
 	unsigned char dev_id;
 };
 
-
 int mpu_i2c_read(unsigned char addr, unsigned char reg, unsigned char len, unsigned char *value);
 int mpu_i2c_write(unsigned char addr, unsigned char reg, unsigned char len, unsigned char *value);
+int mpu_read_mem(unsigned short mem_addr, unsigned short length, unsigned char *data);
+int mpu_write_mem(unsigned short mem_addr, unsigned short length,unsigned char *data);
+int mpu_set_gyro_fsr(unsigned short fsr);
+int mpu_set_accel_fsr(unsigned char fsr);
+int mpu_set_lpf(unsigned short lpf);
+int mpu_set_int_latched(unsigned char enable);
+int mpu_set_int_status(unsigned char enable);
+int mpu_set_bypass(unsigned char bypass_on);
+int mpu_set_sample_rate(unsigned short rate);
+int mpu_set_sensors(unsigned char sensors);
+int mpu_set_dmp_state(unsigned char enable);
+int mpu_get_id(void);
+int mpu_get_accel_fsr(unsigned char *fsr);
+int mpu_get_lpf(unsigned short *lpf);
+int mpu_get_sample_rate(unsigned short *rate);
+int mpu_reset_fifo(void);
+int mpu_configure_fifo(unsigned char sensors);
+int mpu_lp_accel_mode(unsigned char rate);
+int mpu_load_firmware(unsigned short length, const unsigned char *firmware, unsigned short start_addr, unsigned short sample_rate);
+int dmp_set_fifo_rate(unsigned short rate);
+int dmp_set_orientation(unsigned short orient);
+int dmp_set_tap_thresh(unsigned char axis, unsigned short thresh);
+int dmp_set_tap_axes(unsigned char axis);
+int dmp_set_tap_count(unsigned char min_taps);
+int dmp_set_tap_time(unsigned short time);
+int dmp_set_tap_time_multi(unsigned short time);
+int dmp_set_shake_reject_thresh(long sf, unsigned short thresh);
+int dmp_set_shake_reject_time(unsigned short time);
+int dmp_set_shake_reject_timeout(unsigned short time);
+int dmp_set_gyro_cal_status(unsigned char enable);
+int dmp_set_lp_quat_status(unsigned char enable);
+int dmp_set_6x_lp_quat_status(unsigned char enable);
+int dmp_set_feature_status(unsigned short mask);
+int dmp_load_motion_driver_firmware(void);
+unsigned short mpu_row_to_scale(const signed char *row);
+unsigned short mpu_orientation_matrix_to_scalar(const signed char *mtx);
+
+
 
 #endif
 

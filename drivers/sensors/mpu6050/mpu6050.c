@@ -27,29 +27,6 @@
 
 struct mpu6050_device *mpu6050;
 
-static struct file_operations mpu6050_fops = {
-    .owner			= THIS_MODULE,
-    .open			= mpu_open,
-    .release		= mpu_release,
-    .unlocked_ioctl = mpu_ioctl,
-};
-
-static const struct i2c_device_id mpu6050_id[] = {
-	{MPU_NAME, 0},
-	{}
-};
-
-static struct i2c_driver mpu6050_driver = {
-	.class = I2C_CLASS_HWMON,
-	.probe = mpu_probe,
-	.remove = mpu_remove,
-	.id_table = mpu6050_id,
-	.driver = {
-		.owner = THIS_MODULE,
-		.name = MPU_NAME,
-	},
-};
-
 int mpu_i2c_read(u8 addr, u8 reg, u8 len, u8 *value)
 {
 	u8 txbuf[1] = { reg };
@@ -58,7 +35,7 @@ int mpu_i2c_read(u8 addr, u8 reg, u8 len, u8 *value)
 			{
 					.addr	= addr, 
 					.flags	= 0,	
-					.len	= len,
+					.len	= 1,
 					.buf	= txbuf,
 			},
 			{
@@ -89,7 +66,7 @@ int mpu_i2c_write(unsigned char addr, unsigned char reg, unsigned char len, unsi
 			{
 					.addr	= addr, 
 					.flags	= 0,	
-					.len	= len,
+					.len	= len + 1,
 					.buf	= txbuf,
 			},
 	};
@@ -105,6 +82,7 @@ int mpu_i2c_write(unsigned char addr, unsigned char reg, unsigned char len, unsi
 		mpu_log("write reg (0x%02x) error, %d\n", reg, ret);
 	}
 	return ret;
+
 }
 
 int mpu_read_mem(unsigned short mem_addr, unsigned short length, unsigned char *data)
@@ -286,7 +264,7 @@ int mpu_set_int_latched(unsigned char enable)
 	return 0;
 }
 
-static int mpu_set_int_status(unsigned char enable)
+int mpu_set_int_status(unsigned char enable)
 {
 	int ret = -EINVAL;
 	unsigned char tmp;
@@ -478,27 +456,6 @@ int mpu_set_sensors(unsigned char sensors)
 	mpu6050->chip_cfg->sensors = sensors;
 	mpu6050->chip_cfg->lp_accel_mode = 0;
 	mdelay(50);
-	return 0;
-}
-
-int dmp_set_fifo_rate(unsigned short rate)
-{
-	const unsigned char regs_end[12] = {DINAFE, DINAF2, DINAAB,
-		0xc4, DINAAA, DINAF1, DINADF, DINADF, 0xBB, 0xAF, DINADF, DINADF};
-	unsigned short div;
-	unsigned char tmp[8];
-
-	if (rate > DMP_SAMPLE_RATE)
-		return -1;
-	div = DMP_SAMPLE_RATE / rate - 1;
-	tmp[0] = (unsigned char)((div >> 8) & 0xFF);
-	tmp[1] = (unsigned char)(div & 0xFF);
-	if (mpu_write_mem(D_0_22, 2, tmp))
-		return -1;
-	if (mpu_write_mem(CFG_6, 12, (unsigned char*)regs_end))
-		return -1;
-
-	mpu6050->dmp->fifo_rate = rate;
 	return 0;
 }
 
@@ -851,7 +808,7 @@ int mpu_load_firmware(unsigned short length, const unsigned char *firmware,
     unsigned short start_addr, unsigned short sample_rate)
 {
 	int ret = -EINVAL;
-	unsigned short ii;
+	unsigned short ii, k;
 	unsigned short this_write;
 	/* Must divide evenly into DMP_MEM_BLANK_SIZE to avoid bank crossings. */
 #define LOAD_CHUNK  (16)
@@ -887,7 +844,7 @@ int mpu_load_firmware(unsigned short length, const unsigned char *firmware,
 	return 0;
 }
 
-static  unsigned short mpu_row_to_scale(const signed char *row)
+unsigned short mpu_row_to_scale(const signed char *row)
 {
 	if (row[0] > 0)					return 0;
 	else if (row[0] < 0)			return 4;
@@ -898,7 +855,7 @@ static  unsigned short mpu_row_to_scale(const signed char *row)
 	else										return 7;      // error
 }
 
-static  unsigned short mpu_orientation_matrix_to_scalar(const signed char *mtx)
+unsigned short mpu_orientation_matrix_to_scalar(const signed char *mtx)
 {
 	unsigned short scalar;
 
@@ -915,6 +872,28 @@ static  unsigned short mpu_orientation_matrix_to_scalar(const signed char *mtx)
 
 	return scalar;
 }
+
+int dmp_set_fifo_rate(unsigned short rate)
+{
+	const unsigned char regs_end[12] = {DINAFE, DINAF2, DINAAB,
+		0xc4, DINAAA, DINAF1, DINADF, DINADF, 0xBB, 0xAF, DINADF, DINADF};
+	unsigned short div;
+	unsigned char tmp[8];
+
+	if (rate > DMP_SAMPLE_RATE)
+		return -1;
+	div = DMP_SAMPLE_RATE / rate - 1;
+	tmp[0] = (unsigned char)((div >> 8) & 0xFF);
+	tmp[1] = (unsigned char)(div & 0xFF);
+	if (mpu_write_mem(D_0_22, 2, tmp))
+		return -1;
+	if (mpu_write_mem(CFG_6, 12, (unsigned char*)regs_end))
+		return -1;
+
+	mpu6050->dmp->fifo_rate = rate;
+	return 0;
+}
+
 
 int dmp_set_orientation(unsigned short orient)
 {
@@ -1268,7 +1247,7 @@ int dmp_load_motion_driver_firmware(void)
 					DMP_SAMPLE_RATE);
 }
 
-int mpu_var_init(mpu6050_device *mpu)
+int mpu_var_init(struct mpu6050_device *mpu)
 {
 	int err = -EINVAL;
 	struct dmp_s *dmp;
@@ -1280,6 +1259,7 @@ int mpu_var_init(mpu6050_device *mpu)
 		mpu_log("dmp_s kzalloc failed\n");
 		goto dmp_mem_fail;
 	}
+	mpu->dmp = dmp;
 	mpu->dmp->tap_cb = NULL;
 	mpu->dmp->android_orient_cb = NULL;
 	mpu->dmp->orient = 0;
@@ -1293,6 +1273,7 @@ int mpu_var_init(mpu6050_device *mpu)
 		mpu_log("dmp_s kzalloc failed\n");
 		goto chip_cfg_mem_fail;
 	}
+	mpu->chip_cfg = chip_cfg;
 	/* Set to invalid values to ensure no I2C writes are skipped. */
 	mpu->chip_cfg->sensors = 0xFF;
 	mpu->chip_cfg->gyro_fsr = 0xFF;
@@ -1336,7 +1317,7 @@ int mpu_dmp_init(void)
 	msleep(100);
 	/* Wake up chip. */
 	val[0] = 0x00;
-	ret = mpu_i2c_write(mpu6050->dev_id, MPU_PWR_MGMT1, 1, val);
+	ret = mpu_i2c_write(mpu6050->dev_id, MPU_PWR_MGMT1, 2, val);
 	if (ret < 0) {	
 		mpu_log("write PWR_MGMT_1 not ok");	
 		return ret;  
@@ -1376,66 +1357,83 @@ int mpu_dmp_init(void)
 			mpu6050->chip_cfg->accel_half = 0;
 	}
 
-	if (mpu_set_gyro_fsr(2000))
+	ret = mpu_set_gyro_fsr(2000);
+	if (ret != 0)
 		return -1;
-	if (mpu_set_accel_fsr(2))
+	
+	ret = mpu_set_accel_fsr(2);
+	if (ret != 0)
 		return -1;
-	if (mpu_set_lpf(42))
+	
+	ret = mpu_set_lpf(42);
+	if (ret != 0)
 		return -1;
-	if (mpu_set_sample_rate(50))
+	
+	ret = mpu_set_sample_rate(50);
+	if (ret != 0)
 		return -1;
-	if (mpu_configure_fifo(0))
+	
+	ret = mpu_configure_fifo(0);
+	if (ret != 0)
 		return -1;
-
+	
 	/* Already disabled by setup_compass. */
-	if (mpu_set_bypass(0))
+	ret = mpu_set_bypass(0);
+	if (ret != 0)
 		return -1;
 
 	mpu_log("mpu initialization complete......\n ");		//mpu initialization complete	 	  
 
-	if(!mpu_set_sensors(INV_XYZ_GYRO | INV_XYZ_ACCEL))		//mpu_set_sensor
+	ret = mpu_set_sensors(INV_XYZ_GYRO | INV_XYZ_ACCEL);
+	if(ret == 0)		//mpu_set_sensor
 		mpu_log("mpu_set_sensor complete ......\n");
 	else
-		mpu_log("mpu_set_sensor come across error ......\n");
+		mpu_log("mpu_set_sensor come across error ......%d\n", ret);
 
-	if(!mpu_configure_fifo(INV_XYZ_GYRO | INV_XYZ_ACCEL))	//mpu_configure_fifo
+	ret = mpu_configure_fifo(INV_XYZ_GYRO | INV_XYZ_ACCEL);
+	if(ret == 0)	//mpu_configure_fifo
 		mpu_log("mpu_configure_fifo complete ......\n");
 	else
-		mpu_log("mpu_configure_fifo come across error ......\n");
+		mpu_log("mpu_configure_fifo come across error ......%d\n", ret);
 
-	if(!mpu_set_sample_rate(DEFAULT_MPU_HZ))				//mpu_set_sample_rate
+	ret = mpu_set_sample_rate(DEFAULT_MPU_HZ);
+	if(ret == 0)				//mpu_set_sample_rate
 		mpu_log("mpu_set_sample_rate complete ......\n");
 	else
-		mpu_log("mpu_set_sample_rate error ......\n");
+		mpu_log("mpu_set_sample_rate error ......%d\n", ret);
 
-	if(!dmp_load_motion_driver_firmware())					//dmp_load_motion_driver_firmvare
+	ret = dmp_load_motion_driver_firmware();
+	if(ret == 0)					//dmp_load_motion_driver_firmvare
 		mpu_log("dmp_load_motion_driver_firmware complete ......\n");
 	else
-		mpu_log("dmp_load_motion_driver_firmware come across error ......\n");
+		mpu_log("dmp_load_motion_driver_firmware come across error ......%d\n", ret);
 
-	if(!dmp_set_orientation(mpu_orientation_matrix_to_scalar(gyro_orientation)))	  //dmp_set_orientation
+	ret = dmp_set_orientation(mpu_orientation_matrix_to_scalar(gyro_orientation));
+	if(ret == 0)	  //dmp_set_orientation
 		mpu_log("dmp_set_orientation complete ......\n");
 	else
-		mpu_log("dmp_set_orientation come across error ......\n");
+		mpu_log("dmp_set_orientation come across error ......%d\n", ret);
 
-	if(!dmp_set_feature_status(DMP_FEATURE_6X_LP_QUAT | DMP_FEATURE_TAP |
+	ret = dmp_set_feature_status(DMP_FEATURE_6X_LP_QUAT | DMP_FEATURE_TAP |
 				DMP_FEATURE_ANDROID_ORIENT | DMP_FEATURE_SEND_RAW_ACCEL | 
-					DMP_FEATURE_SEND_CAL_GYRO | DMP_FEATURE_GYRO_CAL))	//dmp_set_feature_status
+					DMP_FEATURE_SEND_CAL_GYRO | DMP_FEATURE_GYRO_CAL);
+	if(ret == 0)	//dmp_set_feature_status
 		mpu_log("dmp_set_feature_status complete ......\n");
 	else
-		mpu_log("dmp_set_feature_status come across error ......\n");
+		mpu_log("dmp_set_feature_status come across error ......%d\n", ret);
 
-	if(!dmp_set_fifo_rate(DEFAULT_MPU_HZ))					 //dmp_set_fifo_rate
+	ret = dmp_set_fifo_rate(DEFAULT_MPU_HZ);
+	if(ret == 0)					 //dmp_set_fifo_rate
 		mpu_log("dmp_set_fifo_rate complete ......\n");
 	else
-		mpu_log("dmp_set_fifo_rate come across error ......\n");
+		mpu_log("dmp_set_fifo_rate come across error ......%d\n", ret);
 
 	//run_self_test();		
-
-	if(!mpu_set_dmp_state(1))
+	ret = mpu_set_dmp_state(1);
+	if(ret == 0)
 		mpu_log("mpu_set_dmp_state complete ......\n");
 	else
-		mpu_log("mpu_set_dmp_state come across error ......\n");
+		mpu_log("mpu_set_dmp_state come across error ......%d\n", ret);
 
 	return 0;
 }
@@ -1455,6 +1453,13 @@ static long mpu_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 {
 	return 0;
 }
+
+static struct file_operations mpu6050_fops = {
+    .owner			= THIS_MODULE,
+    .open			= mpu_open,
+    .release		= mpu_release,
+    .unlocked_ioctl = mpu_ioctl,
+};
 
 static int mpu_probe(struct i2c_client *client, const struct i2c_device_id *id)
 {
@@ -1522,6 +1527,22 @@ static int __devexit mpu_remove(struct i2c_client *client)
     kfree(mpu6050);
 	return 0;
 }
+
+static const struct i2c_device_id mpu6050_id[] = {
+	{MPU_NAME, 0},
+	{}
+};
+
+static struct i2c_driver mpu6050_driver = {
+	.class = I2C_CLASS_HWMON,
+	.probe = mpu_probe,
+	.remove = mpu_remove,
+	.id_table = mpu6050_id,
+	.driver = {
+		.owner = THIS_MODULE,
+		.name = MPU_NAME,
+	},
+};
 
 static int __init mpu_init(void)
 {
