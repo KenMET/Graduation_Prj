@@ -27,6 +27,18 @@
 #define	MPU_MAJOR			500
 #define	MPU_MINOR			0
 
+#define	MPU_DELAY_WORK_INTERVAL	1
+
+
+struct hw_s {
+    unsigned short max_fifo;
+    unsigned char num_reg;
+    unsigned short temp_sens;
+    short temp_offset;
+    unsigned short bank_size;
+};
+
+
 /* Cached chip configuration data.
  * TODO: A lot of these can be handled with a bitmask.
  */
@@ -78,12 +90,47 @@ struct dmp_s {
     unsigned char packet_length;
 };
 
+struct mpu6050_event {
+	int	q1;
+	int	q2;
+	int q3;
+	int q4;
+};
+
+struct mpu6050_platform_data {
+	u16	model;				
+	u16	x_plate_ohms;
+	u16	max_rt; /* max. resistance above which samples are ignored */
+	unsigned long poll_delay; /* delay (in ms) after pen-down event
+				     before polling starts */
+	unsigned long poll_period; /* time (in ms) between samples */
+	int	fuzzx; /* fuzz factor for X, Y and pressure axes */
+	int	fuzzy;
+	int	fuzzz;
+
+	int	(*get_pendown_state)(void);
+	void	(*clear_penirq)(void);		/* If needed, clear 2nd level
+						   interrupt source */
+	int	(*init_platform_hw)(void);
+	void	(*exit_platform_hw)(void);
+};
+
+
 struct mpu6050_device{
 	struct cdev	cdev;
 	struct i2c_client *client;
 	struct chip_cfg_s *chip_cfg;
 	struct dmp_s *dmp;
+	struct hw_s *hw;
+	struct delayed_work	work;
 	unsigned char dev_id;
+	char phys[32];
+	int irq;
+	u16 model;
+	unsigned long poll_delay;
+	unsigned long poll_period;
+
+
 };
 
 int mpu_i2c_read(unsigned char addr, unsigned char reg, unsigned char len, unsigned char *value);

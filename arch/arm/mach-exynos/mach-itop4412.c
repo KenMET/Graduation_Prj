@@ -313,16 +313,19 @@ static struct mpu3050_platform_data mpu_data = {
 #ifdef CONFIG_SENSORS_MPU6050
 void sensor_hw_init(void)
 {
+		int err = -1;
 	printk("%s: line = %d\n", __FUNCTION__, __LINE__);
 
-        if (gpio_request(EXYNOS4_GPX3(3), "MPU6050 INT"))
-                printk(KERN_WARNING "MPU6050 INT(GPX3.3) Port request error!!!\n");
+        if (gpio_request(EXYNOS4_GPX3(4), "MPU6050 INT"))
+                printk(KERN_WARNING "MPU6050 INT(GPX3.4) Port request error!!!\n");
         else    {
-                s3c_gpio_setpull(EXYNOS4_GPX3(3), S3C_GPIO_PULL_NONE);
-                s3c_gpio_cfgpin(EXYNOS4_GPX3(3), S3C_GPIO_SFN(0));
-                gpio_direction_input(EXYNOS4_GPX3(3));
-                gpio_free(EXYNOS4_GPX3(3));
+                s3c_gpio_setpull(EXYNOS4_GPX3(4), S3C_GPIO_PULL_NONE);
+                s3c_gpio_cfgpin(EXYNOS4_GPX3(4), S3C_GPIO_SFN(0));
+                gpio_direction_input(EXYNOS4_GPX3(4));
+                gpio_free(EXYNOS4_GPX3(4));
         }
+		
+
 
         /* Sensor AK8975 DRDY */
 /*      if (gpio_request(EXYNOS4_GPX1(4), "AK8975 RDY"))
@@ -2181,7 +2184,7 @@ static struct i2c_board_info i2c_devs7[] __initdata = {
 		{
 					I2C_BOARD_INFO("mpu6050", 0x68),
 					.platform_data = &mpu6050_data,
-					.irq = EXYNOS4_GPX3(3),
+					.irq = IRQ_EINT(28),
 		},
 #endif
 

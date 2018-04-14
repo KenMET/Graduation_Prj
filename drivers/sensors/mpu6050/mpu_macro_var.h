@@ -59,6 +59,7 @@
 #define INV_XYZ_GYRO    INV_X_GYRO | INV_Y_GYRO | INV_Z_GYRO
 #define INV_XYZ_ACCEL   0x08
 #define INV_XYZ_COMPASS 0x01
+#define INV_WXYZ_QUAT	0x100
 
 #define CFG_LP_QUAT             2712
 #define END_ORIENT_TEMP         1866
@@ -269,27 +270,37 @@
 #define MPU_FIFO_R_W						0x74
 #define MPU_RAW_GYRO					0x43
 #define MPU_RAW_ACCEL					0x3B
-#define MPU_TEMP								0x41
-#define MPU_INT_EN							0x38
+#define MPU_TEMP						0x41
+#define MPU_INT_EN						0x38
 #define MPU_DMP_INT_STAT				0x39
-#define MPU_INT_STAT						0x3A
+#define MPU_INT_STAT					0x3A
 #define MPU_PWR_MGMT1					0x6B
 #define MPU_PWR_MGMT2					0x6C
-#define MPU_INT_PIN_CONFIG			0x37
+#define MPU_INT_PIN_CONFIG				0x37
 #define MPU_MEM_R_W						0x6F
 #define MPU_ACCEL_OFFS					0x06
-#define MPU_IIC_MST							0x24
-#define MPU_BANK_SEL						0x6D
-#define MPU_MEM_START_ADDR		0x6E
-#define MPU_PRGM_START_H			0x70
+#define MPU_IIC_MST						0x24
+#define MPU_BANK_SEL					0x6D
+#define MPU_MEM_START_ADDR				0x6E
+#define MPU_PRGM_START_H				0x70
 
-#define DEFAULT_MPU_HZ					200
-#define MAX_PACKET_LENGTH			32
+#define DMP_SAMPLE_RATE					10
 #define DMP_CODE_SIZE					3062
-#define DMP_SAMPLE_RATE				200
-#define GYRO_SF									46850825LL * 200 / DMP_SAMPLE_RATE
-#define DMP_MEM_START_ADDR		0x0400	
-#define DMP_MEM_BLANK_SIZE		256
+#define DMP_MEM_START_ADDR				0x0400	
+#define DMP_MEM_BLANK_SIZE				256
+
+#define DEFAULT_MPU_HZ					10
+#define MAX_PACKET_LENGTH				32
+#define GYRO_SF							46850825LL * 200 / DMP_SAMPLE_RATE
+
+#define INT_SRC_TAP             		0x01
+#define INT_SRC_ANDROID_ORIENT  		0x08
+
+#define QUAT_ERROR_THRESH       		(1L<<24)
+#define QUAT_MAG_SQ_NORMALIZED  		(1L<<28)
+#define QUAT_MAG_SQ_MIN         		(QUAT_MAG_SQ_NORMALIZED - QUAT_ERROR_THRESH)
+#define QUAT_MAG_SQ_MAX         		(QUAT_MAG_SQ_NORMALIZED + QUAT_ERROR_THRESH)
+
 
 /* Filter configurations. */
 enum lpf_e {

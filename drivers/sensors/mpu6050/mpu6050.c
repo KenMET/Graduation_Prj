@@ -21,6 +21,14 @@
 #include <linux/cdev.h>
 #include <linux/platform_device.h>
 
+#include <plat/exynos4.h>
+#include <plat/gpio-cfg.h>
+
+#include <mach/gpio.h>
+#include <mach/regs-gpio.h>
+
+#include <asm/io.h>
+
 #include "mpu6050.h"
 #include "dmpKey.h"
 #include "dmpmap.h"
@@ -473,7 +481,7 @@ int mpu_set_dmp_state(unsigned char enable)
 		mpu_set_int_status(0);
 		/* Disable bypass mode. */
 		mpu_set_bypass(0);
-		/* Keep constant sample rate, FIFO rate controlled by DMP. */
+		/* Keep constant sample rate, FIFO rate controlled by dmp-> */
 		mpu_set_sample_rate(mpu6050->chip_cfg->dmp_sample_rate);
 		/* Remove FIFO elements. */
 		tmp = 0;
@@ -808,7 +816,7 @@ int mpu_load_firmware(unsigned short length, const unsigned char *firmware,
     unsigned short start_addr, unsigned short sample_rate)
 {
 	int ret = -EINVAL;
-	unsigned short ii, k;
+	unsigned short ii;
 	unsigned short this_write;
 	/* Must divide evenly into DMP_MEM_BLANK_SIZE to avoid bank crossings. */
 #define LOAD_CHUNK  (16)
@@ -1247,11 +1255,142 @@ int dmp_load_motion_driver_firmware(void)
 					DMP_SAMPLE_RATE);
 }
 
+
+int mpu_read_fifo_stream(unsigned short length, unsigned char *data,
+    unsigned char *more)
+{
+	int ret = -EINVAL;
+    unsigned char tmp[2];
+    unsigned short fifo_count;
+    if (!mpu6050->chip_cfg->dmp_on)
+        return -1;
+    if (!mpu6050->chip_cfg->sensors)
+        return -1;
+
+	ret = mpu_i2c_read(mpu6050->dev_id, MPU_FIFO_COUNT, 1, tmp);
+	if (ret < 0) {	
+		mpu_log("read MPU_FIFO_COUNT not ok");	
+		return ret;  
+	}
+    fifo_count = (tmp[0] << 8) | tmp[1];
+    if (fifo_count < length) {
+        more[0] = 0;
+        return -1;
+    }
+    if (fifo_count > (mpu6050->hw->max_fifo >> 1)) {
+        /* FIFO is 50% full, better check overflow bit. */
+		ret = mpu_i2c_read(mpu6050->dev_id, MPU_INT_STAT, 1, tmp);
+		if (ret < 0) {	
+			mpu_log("read MPU_INT_STAT not ok");	
+			return ret;  
+		}
+        if (tmp[0] & BIT_FIFO_OVERFLOW) {
+            mpu_reset_fifo();
+            return -2;
+        }
+    }
+	ret = mpu_i2c_read(mpu6050->dev_id, MPU_FIFO_R_W, length, data);
+	if (ret < 0) {	
+		mpu_log("read MPU_FIFO_R_W not ok");	
+		return ret;  
+	}
+    more[0] = fifo_count / length - 1;
+    return 0;
+}
+
+
+int dmp_read_fifo(short *gyro, short *accel, long *quat,
+    unsigned long *timestamp, short *sensors, unsigned char *more)
+{
+    unsigned char fifo_data[MAX_PACKET_LENGTH];
+    unsigned char ii = 0;
+
+    /* TODO: sensors[0] only changes when dmp_enable_feature is called. We can
+     * cache this value and save some cycles.
+     */
+    sensors[0] = 0;
+
+    /* Get a packet. */
+    if (mpu_read_fifo_stream(mpu6050->dmp->packet_length, fifo_data, more))
+        return -1;
+
+    /* Parse DMP packet. */
+    if (mpu6050->dmp->feature_mask & (DMP_FEATURE_LP_QUAT | DMP_FEATURE_6X_LP_QUAT)) {
+        long quat_q14[4], quat_mag_sq;
+
+        quat[0] = ((long)fifo_data[0] << 24) | ((long)fifo_data[1] << 16) |
+            ((long)fifo_data[2] << 8) | fifo_data[3];
+        quat[1] = ((long)fifo_data[4] << 24) | ((long)fifo_data[5] << 16) |
+            ((long)fifo_data[6] << 8) | fifo_data[7];
+        quat[2] = ((long)fifo_data[8] << 24) | ((long)fifo_data[9] << 16) |
+            ((long)fifo_data[10] << 8) | fifo_data[11];
+        quat[3] = ((long)fifo_data[12] << 24) | ((long)fifo_data[13] << 16) |
+            ((long)fifo_data[14] << 8) | fifo_data[15];
+        ii += 16;
+        /* We can detect a corrupted FIFO by monitoring the quaternion data and
+         * ensuring that the magnitude is always normalized to one. This
+         * shouldn't happen in normal operation, but if an I2C error occurs,
+         * the FIFO reads might become misaligned.
+         *
+         * Let's start by scaling down the quaternion data to avoid long long
+         * math.
+         */
+        quat_q14[0] = quat[0] >> 16;
+        quat_q14[1] = quat[1] >> 16;
+        quat_q14[2] = quat[2] >> 16;
+        quat_q14[3] = quat[3] >> 16;
+        quat_mag_sq = quat_q14[0] * quat_q14[0] + quat_q14[1] * quat_q14[1] +
+            quat_q14[2] * quat_q14[2] + quat_q14[3] * quat_q14[3];
+        if ((quat_mag_sq < QUAT_MAG_SQ_MIN) ||
+            (quat_mag_sq > QUAT_MAG_SQ_MAX)) {
+            /* Quaternion is outside of the acceptable threshold. */
+            mpu_reset_fifo();
+            sensors[0] = 0;
+            return -1;
+        }
+        sensors[0] |= INV_WXYZ_QUAT;
+    }
+
+    if (mpu6050->dmp->feature_mask & DMP_FEATURE_SEND_RAW_ACCEL) {
+        accel[0] = ((short)fifo_data[ii+0] << 8) | fifo_data[ii+1];
+        accel[1] = ((short)fifo_data[ii+2] << 8) | fifo_data[ii+3];
+        accel[2] = ((short)fifo_data[ii+4] << 8) | fifo_data[ii+5];
+        ii += 6;
+        sensors[0] |= INV_XYZ_ACCEL;
+    }
+
+    if (mpu6050->dmp->feature_mask & DMP_FEATURE_SEND_ANY_GYRO) {
+        gyro[0] = ((short)fifo_data[ii+0] << 8) | fifo_data[ii+1];
+        gyro[1] = ((short)fifo_data[ii+2] << 8) | fifo_data[ii+3];
+        gyro[2] = ((short)fifo_data[ii+4] << 8) | fifo_data[ii+5];
+        ii += 6;
+        sensors[0] |= INV_XYZ_GYRO;
+    }
+
+    return 0;
+}
+
+static void mpu_read_values(struct mpu6050_device *mpu, struct mpu6050_event *mpu_event)
+{
+	unsigned long sensor_timestamp;
+	short gyro[3], accel[3], sensors;
+	unsigned char more;
+	long quat[4];
+
+	dmp_read_fifo(gyro, accel, quat, &sensor_timestamp, &sensors, &more);	 
+	if(sensors & INV_WXYZ_QUAT )
+	{
+		mpu_log("Read 4 Number\n");
+		//mpu_log("q0:%ld q1:%ld q2:%ld q3:%ld", quat[0], quat[1], quat[2], quat[3]);
+	}
+}
+
 int mpu_var_init(struct mpu6050_device *mpu)
 {
 	int err = -EINVAL;
 	struct dmp_s *dmp;
 	struct chip_cfg_s *chip_cfg;
+	struct hw_s *hw;
 	
 	dmp = kzalloc(sizeof(*dmp), GFP_KERNEL);
 	if (dmp == NULL) {  
@@ -1268,9 +1407,9 @@ int mpu_var_init(struct mpu6050_device *mpu)
 	mpu->dmp->packet_length = 0;
 
 	chip_cfg = kzalloc(sizeof(*chip_cfg), GFP_KERNEL);
-	if (dmp == NULL) {  
+	if (chip_cfg == NULL) {  
 		err = -ENODEV;	 
-		mpu_log("dmp_s kzalloc failed\n");
+		mpu_log("chip_cfg_s kzalloc failed\n");
 		goto chip_cfg_mem_fail;
 	}
 	mpu->chip_cfg = chip_cfg;
@@ -1294,6 +1433,20 @@ int mpu_var_init(struct mpu6050_device *mpu)
 	mpu->chip_cfg->dmp_loaded = 0;
 	mpu->chip_cfg->dmp_sample_rate = 0;
 
+	hw = kzalloc(sizeof(*hw), GFP_KERNEL);
+	if (hw == NULL) {  
+		err = -ENODEV;	 
+		mpu_log("hw_s kzalloc failed\n");
+		goto hw_mem_fail;
+	}
+	mpu->hw = hw;
+	mpu->hw->max_fifo = 1024;
+	mpu->hw->num_reg = 118;
+	mpu->hw->temp_offset = -521;
+	mpu->hw->temp_sens = 340;
+	
+hw_mem_fail:
+	kfree(chip_cfg);
 chip_cfg_mem_fail:
 	kfree(dmp);
 dmp_mem_fail:
@@ -1461,9 +1614,50 @@ static struct file_operations mpu6050_fops = {
     .unlocked_ioctl = mpu_ioctl,
 };
 
+static irqreturn_t mpu6050_irq(int irq, void *handle)
+{
+	struct mpu6050_device *mpu = handle;
+
+	//printk("%s, line = %d\n", __FUNCTION__, __LINE__);
+
+	disable_irq_nosync(mpu->irq);
+	//queue_delayed_work(&mpu->work, msecs_to_jiffies(mpu->poll_delay));
+	schedule_delayed_work(&mpu->work, MPU_DELAY_WORK_INTERVAL);
+
+	return IRQ_HANDLED;
+}
+
+static void mpu6050_free_irq(struct mpu6050_device *mpu)
+{
+	free_irq(mpu->irq, mpu);
+	if (cancel_delayed_work_sync(&mpu->work)) {
+		/*
+		 * Work was pending, therefore we need to enable
+		 * IRQ here to balance the disable_irq() done in the
+		 * interrupt handler.
+		 */
+		enable_irq(mpu->irq);
+	}
+}
+
+static void mpu_work(struct work_struct *work)
+{
+	struct mpu6050_device *mpu =
+			container_of(to_delayed_work(work), struct mpu6050_device, work);
+	struct mpu6050_event mpu_event;
+
+	//printk("%s, line = %d\n", __FUNCTION__, __LINE__);
+	
+	mpu_read_values(mpu, &mpu_event);
+
+	enable_irq(mpu->irq);
+}
+
 static int mpu_probe(struct i2c_client *client, const struct i2c_device_id *id)
 {
 	int err = -EINVAL;
+	struct mpu6050_device *mpu;
+	struct mpu6050_platform_data *pdata = client->dev.platform_data;
 	dev_t devno = MKDEV(MPU_MAJOR, MPU_MINOR);
 
 	mpu_log("mpu6050 driver  probe!\n");
@@ -1476,14 +1670,15 @@ static int mpu_probe(struct i2c_client *client, const struct i2c_device_id *id)
 
 	}
 	
-	mpu6050 = kzalloc(sizeof(*mpu6050), GFP_KERNEL);  
-	if (mpu6050 == NULL) {  
+	mpu = kzalloc(sizeof(struct mpu6050_device), GFP_KERNEL);  
+	if (mpu == NULL) {  
 		err = -ENODEV;	 
 		dev_err(&client->dev, "probe kzalloc failed\n");
 		goto kzalloc_failed;
 	}
-
-	mpu6050->client = client;
+	mpu6050 = mpu;
+	
+	mpu->client = client;
 
 	err = register_chrdev_region(devno, 1, MPU_NAME);
 	if (err < 0) {  
@@ -1492,23 +1687,41 @@ static int mpu_probe(struct i2c_client *client, const struct i2c_device_id *id)
 		goto register_chrdev_failed;
     }
 
-	cdev_init(&mpu6050->cdev, &mpu6050_fops);  
-	mpu6050->cdev.owner = THIS_MODULE;	
-	err = cdev_add(&mpu6050->cdev, devno, 1);  
+	cdev_init(&mpu->cdev, &mpu6050_fops);  
+	mpu->cdev.owner = THIS_MODULE;	
+	err = cdev_add(&mpu->cdev, devno, 1);  
 	if (err < 0) {	
 		dev_err(&client->dev, "failed to add device\n");  
 		goto add_cdev_failed;	
 	}
 
-	mpu6050->dev_id = mpu_get_id();
-	mpu_log("WHO_AM_I:0x%x\n", mpu6050->dev_id);
+	mpu->dev_id = mpu_get_id();
+	mpu_log("WHO_AM_I:0x%x\n", mpu->dev_id);
 	
-	mpu_var_init(mpu6050);
-	mpu_log("mpu6050 dmp test:%d!\n", mpu_dmp_init());
+	mpu->irq = client->irq;
+	INIT_DELAYED_WORK(&mpu->work, mpu_work);
+	
+	mpu->model			  	= pdata->model;
+	mpu->poll_delay		  	= pdata->poll_delay ? : 1;
+	mpu->poll_period 	  	= pdata->poll_period ? : 1;
+	snprintf(mpu->phys, sizeof(mpu->phys),
+		 "%s/mpu6050", dev_name(&client->dev));
 
+	err = request_irq(mpu->irq, mpu6050_irq, IRQ_TYPE_EDGE_RISING,
+			client->dev.driver->name, mpu);
+	if (err < 0) {
+		mpu_log("irq %d busy?\n", mpu->irq);
+		goto request_irq_failed;
+	}
+	
+	mpu_var_init(mpu);
+	mpu_log("mpu6050 dmp test:%d!\n", mpu_dmp_init());
 
 	return 0;
 
+	mpu6050_free_irq(mpu);
+request_irq_failed:
+	cdev_del(&mpu->cdev);
 add_cdev_failed:
 	unregister_chrdev_region(devno, 1);
 register_chrdev_failed:
