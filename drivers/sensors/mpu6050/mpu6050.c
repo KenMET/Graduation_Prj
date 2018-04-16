@@ -1561,58 +1561,68 @@ int mpu_dmp_init(void)
 	if (ret != 0)
 		return -1;
 
-	mpu_log("mpu initialization complete......\n ");		//mpu initialization complete	 	  
+	 	  
 
 	ret = mpu_set_sensors(INV_XYZ_GYRO | INV_XYZ_ACCEL);
-	if(ret == 0)		//mpu_set_sensor
-		mpu_log("mpu_set_sensor complete ......\n");
-	else
+	if(ret != 0)		
+	{
 		mpu_log("mpu_set_sensor come across error ......%d\n", ret);
+		return ret;
+	}
+		
 
 	ret = mpu_configure_fifo(INV_XYZ_GYRO | INV_XYZ_ACCEL);
-	if(ret == 0)	//mpu_configure_fifo
-		mpu_log("mpu_configure_fifo complete ......\n");
-	else
+	if(ret != 0)
+	{
 		mpu_log("mpu_configure_fifo come across error ......%d\n", ret);
+		return ret;
+	}
 
 	ret = mpu_set_sample_rate(DEFAULT_MPU_HZ);
-	if(ret == 0)				//mpu_set_sample_rate
-		mpu_log("mpu_set_sample_rate complete ......\n");
-	else
+	if(ret != 0)
+	{
 		mpu_log("mpu_set_sample_rate error ......%d\n", ret);
+		return ret;
+	}	
 
 	ret = dmp_load_motion_driver_firmware();
-	if(ret == 0)					//dmp_load_motion_driver_firmvare
-		mpu_log("dmp_load_motion_driver_firmware complete ......\n");
-	else
+	if(ret != 0)
+	{
 		mpu_log("dmp_load_motion_driver_firmware come across error ......%d\n", ret);
+		return ret;
+	}
 
 	ret = dmp_set_orientation(mpu_orientation_matrix_to_scalar(gyro_orientation));
-	if(ret == 0)	  //dmp_set_orientation
-		mpu_log("dmp_set_orientation complete ......\n");
-	else
+	if(ret != 0)
+	{
 		mpu_log("dmp_set_orientation come across error ......%d\n", ret);
+		return ret;
+	}		
 
 	ret = dmp_set_feature_status(DMP_FEATURE_6X_LP_QUAT | DMP_FEATURE_TAP |
 				DMP_FEATURE_ANDROID_ORIENT | DMP_FEATURE_SEND_RAW_ACCEL | 
 					DMP_FEATURE_SEND_CAL_GYRO | DMP_FEATURE_GYRO_CAL);
-	if(ret == 0)	//dmp_set_feature_status
-		mpu_log("dmp_set_feature_status complete ......\n");
-	else
+	if(ret != 0)
+	{
 		mpu_log("dmp_set_feature_status come across error ......%d\n", ret);
-
+		return ret;
+	}
+		
 	ret = dmp_set_fifo_rate(DEFAULT_MPU_HZ);
-	if(ret == 0)					 //dmp_set_fifo_rate
-		mpu_log("dmp_set_fifo_rate complete ......\n");
-	else
+	if(ret != 0)
+	{
 		mpu_log("dmp_set_fifo_rate come across error ......%d\n", ret);
+		return ret;
+	}	
 
-	//run_self_test();		
 	ret = mpu_set_dmp_state(1);
-	if(ret == 0)
-		mpu_log("mpu_set_dmp_state complete ......\n");
-	else
+	if(ret != 0)
+	{
 		mpu_log("mpu_set_dmp_state come across error ......%d\n", ret);
+		return ret;
+	}		
+
+	mpu_log("mpu dmp initialization complete......\n ");
 
 	return 0;
 }

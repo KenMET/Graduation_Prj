@@ -2180,24 +2180,24 @@ static struct tsc2007_platform_data tsc2007_info = {
 static struct i2c_board_info i2c_devs7[] __initdata = {
 
 #if defined(CONFIG_CPU_TYPE_SCP_ELITE) || defined(CONFIG_CPU_TYPE_POP_ELITE) || defined(CONFIG_CPU_TYPE_POP2G_ELITE)
-	/* add by cym 20130417 for TSC2007 TouchScreen 
+	/* add by cym 20130417 for TSC2007 TouchScreen */
 #ifdef CONFIG_TOUCHSCREEN_TSC2007
 	{
 		I2C_BOARD_INFO("tsc2007", 0x48),
 		.type		= "tsc2007",
 		.platform_data	= &tsc2007_info,
 		.irq = IRQ_EINT(0),
-         }
+	},
 #endif
-*/
+
 
 #ifdef CONFIG_SENSORS_MPU6050
-		{
-					I2C_BOARD_INFO("mpu6050", 0x68),
-					.type		= "mpu6050",
-					.platform_data = &mpu6050_data,
-					.irq = IRQ_EINT(28),
-		},
+	{
+		I2C_BOARD_INFO("mpu6050", 0x68),
+		.type		= "mpu6050",
+		.platform_data = &mpu6050_data,
+		.irq = IRQ_EINT(28),
+	},
 #endif
 	
 
