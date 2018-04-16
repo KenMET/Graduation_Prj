@@ -320,11 +320,20 @@ void sensor_hw_init(void)
                 printk(KERN_WARNING "MPU6050 INT(GPX3.4) Port request error!!!\n");
         else    {
                 s3c_gpio_setpull(EXYNOS4_GPX3(4), S3C_GPIO_PULL_NONE);
-                s3c_gpio_cfgpin(EXYNOS4_GPX3(4), S3C_GPIO_SFN(0));
+                s3c_gpio_cfgpin(EXYNOS4_GPX3(4), S3C_GPIO_SFN(0xF));
                 gpio_direction_input(EXYNOS4_GPX3(4));
                 gpio_free(EXYNOS4_GPX3(4));
         }
-		
+/*		
+        if (gpio_request(EXYNOS4_GPX0(0), "MPU6050 INT"))
+                printk(KERN_WARNING "MPU6050 INT(GPX3.0) Port request error!!!\n");
+        else    {
+                s3c_gpio_setpull(EXYNOS4_GPX0(0), S3C_GPIO_PULL_NONE);
+                s3c_gpio_cfgpin(EXYNOS4_GPX0(0), S3C_GPIO_SFN(0xF));
+                gpio_direction_input(EXYNOS4_GPX0(0));
+                gpio_free(EXYNOS4_GPX0(0));
+        }		
+*/		
 
 
         /* Sensor AK8975 DRDY */
@@ -2179,14 +2188,18 @@ static struct i2c_board_info i2c_devs7[] __initdata = {
 		.platform_data	= &tsc2007_info,
 		.irq = IRQ_EINT(0),
          }
-#endif*/
+#endif
+*/
+
 #ifdef CONFIG_SENSORS_MPU6050
 		{
 					I2C_BOARD_INFO("mpu6050", 0x68),
+					.type		= "mpu6050",
 					.platform_data = &mpu6050_data,
 					.irq = IRQ_EINT(28),
 		},
 #endif
+	
 
 	/* end add */
 #endif

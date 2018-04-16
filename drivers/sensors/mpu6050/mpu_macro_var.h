@@ -284,12 +284,12 @@
 #define MPU_MEM_START_ADDR				0x6E
 #define MPU_PRGM_START_H				0x70
 
-#define DMP_SAMPLE_RATE					10
+#define DMP_SAMPLE_RATE					100
 #define DMP_CODE_SIZE					3062
 #define DMP_MEM_START_ADDR				0x0400	
 #define DMP_MEM_BLANK_SIZE				256
 
-#define DEFAULT_MPU_HZ					10
+#define DEFAULT_MPU_HZ					100
 #define MAX_PACKET_LENGTH				32
 #define GYRO_SF							46850825LL * 200 / DMP_SAMPLE_RATE
 

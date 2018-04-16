@@ -118,11 +118,14 @@ struct mpu6050_platform_data {
 
 struct mpu6050_device{
 	struct cdev	cdev;
+	struct class *cdev_class;
 	struct i2c_client *client;
 	struct chip_cfg_s *chip_cfg;
 	struct dmp_s *dmp;
 	struct hw_s *hw;
 	struct delayed_work	work;
+	struct input_dev *input;
+	struct mpu6050_event *mpu_ev;
 	unsigned char dev_id;
 	char phys[32];
 	int irq;

@@ -15,6 +15,8 @@
 #include <linux/input.h>
 #include <linux/delay.h>
 #include <linux/slab.h>
+#include <linux/fs.h>
+#include <linux/uaccess.h>
 #include <linux/interrupt.h>
 #include <linux/irq.h>
 #include <linux/gpio.h>
@@ -33,6 +35,9 @@
 #include "dmpKey.h"
 #include "dmpmap.h"
 
+#define	INPUT_SYSTEM_SUPPORT
+
+static struct proc_dir_entry *mpu_proc_entry;
 struct mpu6050_device *mpu6050;
 
 int mpu_i2c_read(u8 addr, u8 reg, u8 len, u8 *value)
@@ -1370,7 +1375,7 @@ int dmp_read_fifo(short *gyro, short *accel, long *quat,
     return 0;
 }
 
-static void mpu_read_values(struct mpu6050_device *mpu, struct mpu6050_event *mpu_event)
+static void mpu_read_values(struct mpu6050_event *mpu_event)
 {
 	unsigned long sensor_timestamp;
 	short gyro[3], accel[3], sensors;
@@ -1380,7 +1385,10 @@ static void mpu_read_values(struct mpu6050_device *mpu, struct mpu6050_event *mp
 	dmp_read_fifo(gyro, accel, quat, &sensor_timestamp, &sensors, &more);	 
 	if(sensors & INV_WXYZ_QUAT )
 	{
-		mpu_log("Read 4 Number\n");
+		mpu_event->q1 = (int)quat[0];
+		mpu_event->q2 = (int)quat[1];
+		mpu_event->q3 = (int)quat[2];
+		mpu_event->q4 = (int)quat[3];
 		//mpu_log("q0:%ld q1:%ld q2:%ld q3:%ld", quat[0], quat[1], quat[2], quat[3]);
 	}
 }
@@ -1391,6 +1399,7 @@ int mpu_var_init(struct mpu6050_device *mpu)
 	struct dmp_s *dmp;
 	struct chip_cfg_s *chip_cfg;
 	struct hw_s *hw;
+	struct mpu6050_event *mpu_ev;
 	
 	dmp = kzalloc(sizeof(*dmp), GFP_KERNEL);
 	if (dmp == NULL) {  
@@ -1444,7 +1453,24 @@ int mpu_var_init(struct mpu6050_device *mpu)
 	mpu->hw->num_reg = 118;
 	mpu->hw->temp_offset = -521;
 	mpu->hw->temp_sens = 340;
+
+	mpu_ev = kzalloc(sizeof(*mpu_ev), GFP_KERNEL);
+	if (mpu_ev == NULL) {  
+		err = -ENODEV;	 
+		mpu_log("mpu6050_event kzalloc failed\n");
+		goto mpu6050_event_mem_fail;
+	}
+	mpu->mpu_ev = mpu_ev;
+	mpu->mpu_ev->q1 = 0;
+	mpu->mpu_ev->q2 = 0;
+	mpu->mpu_ev->q3 = 0;
+	mpu->mpu_ev->q4 = 0;
+
+	return 0;
 	
+	kfree(mpu_ev);
+mpu6050_event_mem_fail:
+	kfree(hw);
 hw_mem_fail:
 	kfree(chip_cfg);
 chip_cfg_mem_fail:
@@ -1594,24 +1620,50 @@ int mpu_dmp_init(void)
 
 static int mpu_open(struct inode *inode, struct file *filp)
 {
+	mpu_log("%s, line = %d\n", __FUNCTION__, __LINE__);
     return 0;
 }
 
 static int mpu_release(struct inode *inode, struct file *filp)
 {
+	mpu_log("%s, line = %d\n", __FUNCTION__, __LINE__);
     return 0;
 }
 
 static long mpu_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 {
+	struct mpu6050_event mpu_ev; 
+  
+    switch(cmd) {  
+    	case 2:
+			mpu_ev.q1 = mpu6050->mpu_ev->q1;
+			mpu_ev.q2 = mpu6050->mpu_ev->q2;
+			mpu_ev.q3 = mpu6050->mpu_ev->q3;
+			mpu_ev.q4 = mpu6050->mpu_ev->q4;
+			break;
+		default:
+			mpu_log("ioctl unkown cmd\n");
+			break;
+	}
+	if (copy_to_user((void *)arg, &mpu_ev, sizeof(struct mpu6050_event)))  
+        return -EFAULT;
+	
 	return 0;
 }
+
+static unsigned int mpu_poll(struct file *file, struct poll_table_struct *poll_tab)
+{
+	
+	return 0;
+}
+
 
 static struct file_operations mpu6050_fops = {
     .owner			= THIS_MODULE,
     .open			= mpu_open,
     .release		= mpu_release,
     .unlocked_ioctl = mpu_ioctl,
+    .poll			= mpu_poll,
 };
 
 static irqreturn_t mpu6050_irq(int irq, void *handle)
@@ -1644,12 +1696,33 @@ static void mpu_work(struct work_struct *work)
 {
 	struct mpu6050_device *mpu =
 			container_of(to_delayed_work(work), struct mpu6050_device, work);
-	struct mpu6050_event mpu_event;
-
+	struct mpu6050_event *mpu_ev = mpu->mpu_ev;
+	struct input_dev *input = mpu->input;
+	static int test = 0;
+	
+	if(mpu_ev == NULL || input == NULL)
+		goto not_init_yet;
+	
 	//printk("%s, line = %d\n", __FUNCTION__, __LINE__);
 	
-	mpu_read_values(mpu, &mpu_event);
+	memset(mpu_ev,0,sizeof(struct mpu6050_event));
+	
+	mpu_read_values(mpu_ev);
 
+#ifdef INPUT_SYSTEM_SUPPORT
+	input_report_abs(input, ABS_X, mpu_ev->q1);
+	input_report_abs(input, ABS_Y, mpu_ev->q2);
+	input_report_abs(input, ABS_Z, mpu_ev->q3);
+	input_report_abs(input, ABS_RX, mpu_ev->q4);
+
+	test = !test;
+	input_report_key(input, BTN_TOUCH, test);
+	
+	input_sync(input);
+#endif
+
+
+not_init_yet:
 	enable_irq(mpu->irq);
 }
 
@@ -1658,6 +1731,8 @@ static int mpu_probe(struct i2c_client *client, const struct i2c_device_id *id)
 	int err = -EINVAL;
 	struct mpu6050_device *mpu;
 	struct mpu6050_platform_data *pdata = client->dev.platform_data;
+	struct input_dev *input_dev;
+
 	dev_t devno = MKDEV(MPU_MAJOR, MPU_MINOR);
 
 	mpu_log("mpu6050 driver  probe!\n");
@@ -1695,9 +1770,15 @@ static int mpu_probe(struct i2c_client *client, const struct i2c_device_id *id)
 		goto add_cdev_failed;	
 	}
 
-	mpu->dev_id = mpu_get_id();
-	mpu_log("WHO_AM_I:0x%x\n", mpu->dev_id);
+	mpu->cdev_class = class_create(THIS_MODULE, MPU_NAME);
+	if(IS_ERR(mpu->cdev_class))
+	{
+		dev_err(&client->dev, "failed to add device\n");  
+		goto create_class_failed;	
+	}
 	
+	device_create(mpu->cdev_class, NULL, devno, 0, MPU_NAME);
+
 	mpu->irq = client->irq;
 	INIT_DELAYED_WORK(&mpu->work, mpu_work);
 	
@@ -1713,14 +1794,55 @@ static int mpu_probe(struct i2c_client *client, const struct i2c_device_id *id)
 		mpu_log("irq %d busy?\n", mpu->irq);
 		goto request_irq_failed;
 	}
+#ifdef INPUT_SYSTEM_SUPPORT
+	input_dev = input_allocate_device();
+	if (!mpu || !input_dev) {
+		err = -ENOMEM;
+		goto err_free_input_mem;
+	}
+	mpu->input = input_dev;
+	input_dev->name = "MPU6050 DMP Quaternion";
+	input_dev->phys = mpu->phys;
+	input_dev->id.bustype = BUS_I2C;
+
+	set_bit(EV_SYN, input_dev->evbit);
+	set_bit(EV_ABS, input_dev->evbit);
+	set_bit(EV_KEY, input_dev->evbit);
+	
+	set_bit(ABS_X, input_dev->absbit);
+	set_bit(ABS_Y, input_dev->absbit);
+	set_bit(ABS_Z, input_dev->absbit);
+	set_bit(ABS_RX, input_dev->absbit);
+	set_bit(BTN_TOUCH, input_dev->keybit);
+
+
+	input_set_abs_params(input_dev, ABS_X, -2147438647, 2147438646, 0, 0);
+	input_set_abs_params(input_dev, ABS_Y, -2147438647, 2147438646, 0, 0);
+	input_set_abs_params(input_dev, ABS_Z, -2147438647, 2147438646, 0, 0);
+	input_set_abs_params(input_dev, ABS_RX, -2147438647, 2147438646, 0, 0);
+
+	err = input_register_device(input_dev);
+	if (err) {
+		mpu_log("input device register failed\n");
+		goto register_input_failed;
+	}
+#endif
+
+	mpu->dev_id = mpu_get_id();
+	mpu_log("WHO_AM_I:0x%x\n", mpu->dev_id);
 	
 	mpu_var_init(mpu);
 	mpu_log("mpu6050 dmp test:%d!\n", mpu_dmp_init());
 
 	return 0;
-
+	
+register_input_failed:
+	kfree(input_dev);
+err_free_input_mem:
 	mpu6050_free_irq(mpu);
 request_irq_failed:
+	class_destroy(mpu->cdev_class);
+create_class_failed:
 	cdev_del(&mpu->cdev);
 add_cdev_failed:
 	unregister_chrdev_region(devno, 1);
