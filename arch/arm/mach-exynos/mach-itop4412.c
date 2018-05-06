@@ -2671,6 +2671,14 @@ struct platform_device s3c_device_adc_ctl = {
 };
 #endif
 
+#ifdef CONFIG_SENSORS_ENCODER
+struct platform_device sensors_encoder = {
+        .name   = "Encoder",
+        .id             = -1,
+};
+#endif
+
+
 #if  defined(CONFIG_CPU_TYPE_SCP_ELITE)  || defined(CONFIG_CPU_TYPE_POP_ELITE) || defined(CONFIG_CPU_TYPE_POP2G_ELITE)
 #ifdef CONFIG_RELAY_CTL
 struct platform_device s3c_device_relay_ctl = {
@@ -2995,6 +3003,11 @@ static struct platform_device *smdk4x12_devices[] __initdata = {
 #ifdef CONFIG_ADC_CTL
 	&s3c_device_adc_ctl,
 #endif
+
+#ifdef CONFIG_SENSORS_ENCODER
+	&sensors_encoder,
+#endif
+
 
 #if  defined(CONFIG_CPU_TYPE_SCP_ELITE) || defined(CONFIG_CPU_TYPE_POP_ELITE) || defined(CONFIG_CPU_TYPE_POP2G_ELITE)
 #ifdef CONFIG_RELAY_CTL
