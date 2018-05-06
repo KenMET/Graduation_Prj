@@ -12,7 +12,7 @@
 
 #define TEST_POINTS         100
 
-#define RESERVE             4
+#define RESERVE             2
 
 #define MSG_BOX(...)        do{char test[50];sprintf(test, ##__VA_ARGS__);QMessageBox::information(NULL, "Debug", test);}while(0)
 
@@ -33,11 +33,23 @@ private:
 
 
 public:
-    bool **canvas;
     struct vector{
         float angle;
-        int distance;
+        float distance;
     };
+    struct record_point{
+        int count;
+        int left;
+        int right;
+        int top;
+        int bottom;
+        int *pos_x;
+        int *pos_y;
+    };
+
+    //record_point *record;
+    bool **canvas;
+
 
     void paintEvent(QPaintEvent *event);
 

@@ -21,6 +21,8 @@ MainWindow::MainWindow(QWidget *parent) :
     ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
+
+    User_Init();
 }
 
 MainWindow::~MainWindow()
@@ -30,7 +32,7 @@ MainWindow::~MainWindow()
 
 void MainWindow::paintEvent(QPaintEvent *event)
 {
-    User_Init();
+    //User_Init();
 }
 
 void MainWindow::Put_Vector2Canvas(vector *vector, int count)
@@ -45,45 +47,115 @@ void MainWindow::Put_Vector2Canvas(vector *vector, int count)
 
     int canvas_w, canvas_h;
     int last_canvas_w = BUFF_WIDTH / 2, last_canvas_h = BUFF_HEIGHT / 2;
-    int wight;
+    int caiji_count;
     double xielv;
+    double chang, kuan;
+    bool scan_way = 0;
+
+    record_point *record;
+    record = (record_point*)malloc(sizeof(record_point));
+    record->pos_x = (int*)malloc(sizeof(int) * BUFF_WIDTH);
+    record->pos_y = (int*)malloc(sizeof(int) * BUFF_HEIGHT);
+    if(record == NULL || record->pos_x == NULL || record->pos_y == NULL)
+        return ;
+    record->count = 0;
+    record->top = last_canvas_h;
+    record->bottom = last_canvas_h;
+    record->left = last_canvas_w;
+    record->right = last_canvas_w;
+
+    record->pos_x[record->count] = last_canvas_w;
+    record->pos_y[record->count] = last_canvas_h;
+    record->count++;
+
     for(int k=1; k<=count; k++)
     {
-        wight = sin(M_PI/180 *vector[k-1].angle)*vector[k-1].distance;
-        xielv = (cos(M_PI/180 *vector[k-1].angle)*vector[k-1].distance) / (sin(M_PI/180 *vector[k-1].angle)*vector[k-1].distance);
-        if(vector[k-1].angle >= 0 && vector[k-1].angle <= 180)
+        //gao = cos(M_PI / (vector[k-1].angle / 180))*vector[k-1].distance;
+        //xielv = (sin(M_PI / (vector[k-1].angle / 180))*vector[k-1].distance) / (cos(M_PI / (vector[k-1].angle / 180))*vector[k-1].distance);
+        chang = cos((M_PI * vector[k-1].angle) / 180) * vector[k-1].distance;
+        kuan =  sin((M_PI * vector[k-1].angle) / 180) * vector[k-1].distance;
+
+
+        if(abs(kuan) > abs(chang))
         {
-            for(int j=0; j<=wight; j++)
+            if(kuan > 0)
+                caiji_count = (int)(kuan + 0.5);
+            else
+                caiji_count = (int)(kuan - 0.5);
+            xielv = chang / kuan;
+            scan_way = 1;   //shu zhi sao miao
+        }
+        else
+        {
+            if(chang > 0)
+                caiji_count = (int)(chang + 0.5);
+            else
+                caiji_count = (int)(chang - 0.5);
+            xielv = kuan / chang;
+            scan_way = 0;   //shui ping sao miao
+        }
+
+
+        //MSG_BOX("y= %fx count:[%f or %f->%d] (angle%f distance:%f)", xielv, chang, kuan, caiji_count, vector[k-1].angle, vector[k-1].distance);
+        if((vector[k-1].angle >= 0 && vector[k-1].angle <= 90) || (vector[k-1].angle > 270 && vector[k-1].angle <= 360))
+        {
+            for(int j=0; j<=caiji_count; j++)
             {
-                canvas_w = j;
-                if(xielv >= 0)
+                if(scan_way == 0)
+                {
+                    canvas_w = j;
                     canvas_h = j * xielv + 0.5;
+                }
                 else
-                    canvas_h = j * xielv - 0.5;
-                //MSG_BOX("1.canvas_w:%d  canvas_h:%d",canvas_w + last_canvas_w, canvas_h + last_canvas_h);
+                {
+                    canvas_h = j;
+                    canvas_w = j * xielv + 0.5;
+                }
                 canvas[canvas_w + last_canvas_w][canvas_h + last_canvas_h] = 1;
+                //MSG_BOX("1.canvas_w:%d  canvas_h:%d",canvas_w + last_canvas_w, canvas_h + last_canvas_h);
+
             }
         }
-        else if(vector[k-1].angle > 180 && vector[k-1].angle <= 360)
+        else if((vector[k-1].angle > 90 && vector[k-1].angle <= 180) || (vector[k-1].angle > 180 && vector[k-1].angle <= 270))
         {
-            for(int j=0; j>=wight; j--)
+            for(int j=0; j>=caiji_count; j--)
             {
-                canvas_w = j;
-                if(xielv >= 0)
+                if(scan_way == 0)
+                {
+                    canvas_w = j;
                     canvas_h = j * xielv - 0.5;
+                }
                 else
-                    canvas_h = j * xielv + 0.5;
+                {
+                    canvas_h = j;
+                    canvas_w = j * xielv - 0.5;
+                }
+                canvas[canvas_w + last_canvas_w][canvas_h + last_canvas_h] = 1;
                 //MSG_BOX("2.canvas_w:%d  canvas_h:%d",canvas_w + last_canvas_w, canvas_h + last_canvas_h);
-                canvas[last_canvas_w + canvas_w][last_canvas_h + canvas_h] = 1;
             }
         }
         else
             MSG_BOX("Err Angle");
+
         last_canvas_w += canvas_w;
         last_canvas_h += canvas_h;
+        record->pos_x[record->count] = last_canvas_w;
+        record->pos_y[record->count] = last_canvas_h;
+        record->count++;
+        if(last_canvas_w < record->left)
+            record->left = last_canvas_w;
+        if(last_canvas_w > record->right)
+            record->right = last_canvas_w;
+        if(last_canvas_h < record->bottom)
+            record->bottom = last_canvas_h;
+        if(last_canvas_h > record->top)
+            record->top = last_canvas_h;
     }
-    bool find = 0;
+    //MSG_BOX("top:%d bottom:%d left:%d right:%d ", record->top, record->bottom, record->left, record->right);
+    /*
     int top,bottom,left,right,bansui;
+    bool find = 0;
+
     for(int i=0; i<BUFF_WIDTH; i++)
     {
         for(int j=0; j<BUFF_HEIGHT; j++)
@@ -145,10 +217,34 @@ void MainWindow::Put_Vector2Canvas(vector *vector, int count)
             break;
     }
     //MSG_BOX("top:%d bottom:%d left:%d right:%d ", top, bottom, left, right);
+    */
 
     QPointF *pionts;
     pionts = (QPointF *)malloc(sizeof(QPointF) * PAINTER_WIDTH * PAINTER_HEIGHT);
 
+    double wight_bili, hight_bili, zuijia_bili;
+    hight_bili = (double)(record->top - record->bottom + RESERVE) / (double)PAINTER_HEIGHT;
+    wight_bili = (double)(record->right - record->left + RESERVE) / (double)PAINTER_WIDTH;
+    if(hight_bili > wight_bili)
+        zuijia_bili = hight_bili;
+    else
+        zuijia_bili = wight_bili;
+
+    int test_x, test_y;
+
+    for(int j=0; j<record->count; j++)
+    {
+        test_x = record->pos_x[j] - record->left + RESERVE / 2;
+        test_y = record->pos_y[j] - record->bottom + RESERVE / 2;
+        test_x = test_x / zuijia_bili;
+        test_y = test_y / zuijia_bili;
+        //MSG_BOX("QPointF_x:[%d] QPointF_y:[%d]", test_x, test_y);
+        pionts[j] = QPointF(test_x, test_y);
+    }
+
+/*
+    QPointF *pionts;
+    pionts = (QPointF *)malloc(sizeof(QPointF) * PAINTER_WIDTH * PAINTER_HEIGHT);
     int start_x, start_y, pionts_count = 0;
     int detect_x, detect_y, last_x, last_y, last_record_x=0, last_record_y=0;
 
@@ -196,7 +292,7 @@ void MainWindow::Put_Vector2Canvas(vector *vector, int count)
             if(detect_x == last_record_x && detect_y == last_record_y)
                 continue;
             if(canvas[detect_x][detect_y] == 1)
-            { 
+            {
                 last_record_x = last_x;
                 last_record_y = last_y;
                 last_x = detect_x;
@@ -210,9 +306,9 @@ void MainWindow::Put_Vector2Canvas(vector *vector, int count)
         if(paint_OK)
             break;
     }
+*/
 
-
-    painter.drawPolygon(pionts, pionts_count);
+    painter.drawPolygon(pionts, record->count);
     free(pionts);
 }
 
@@ -255,9 +351,10 @@ void MainWindow::User_Init(void)
 
 
     vector buff1[BUFF1_SIZE] = {
-        {30, 30},
-        {150, 30},
-        {210, 30},
+        {90, 30},
+        {180, 30},
+        {270, 30},
+        //{315, 30},
     };
 
     Put_Vector2Canvas(buff1, BUFF1_SIZE);
