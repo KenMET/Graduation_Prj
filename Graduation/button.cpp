@@ -24,8 +24,8 @@ void MainWindow::on_pushButton_clicked()
 
 void MainWindow::on_pushButton_2_clicked()
 {
-    QMessageBox::information(NULL, "title2", "comment2");
-    //User_Init();
+    //QMessageBox::information(NULL, "title2", "comment2");
+    User_Init();
 }
 
 

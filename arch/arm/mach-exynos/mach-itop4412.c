@@ -1940,6 +1940,7 @@ static struct i2c_board_info i2c_devs0[] __initdata = {
 		I2C_BOARD_INFO("s5p_ddc", (0x74 >> 1)),    
 	},
 #endif
+
 };
 
 static struct i2c_board_info i2c_devs1[] __initdata = {
@@ -2094,6 +2095,8 @@ static struct i2c_board_info i2c_devs3[] __initdata = {
 		.platform_data = &ft5x0x_pdata,
 	},
 #endif
+
+
 	/* end add */
 };
 
@@ -2113,25 +2116,23 @@ static struct i2c_board_info i2c_devs4[] __initdata = {
 		.platform_data	= &wm8960_pdata,
 	},
 #endif
+#ifdef CONFIG_SENSORS_MPU6050
+			{
+				I2C_BOARD_INFO("mpu6050_dev1", 0x68),
+				.type		= "mpu6050_dev1",
+				.platform_data = &mpu6050_data,
+				.irq = IRQ_EINT(27),
+			},
+#endif
+
+
 };
 
 
 /* I2C5 */
 static struct i2c_board_info i2c_devs5[] __initdata = {
-#ifdef CONFIG_TC4_GB// liang
-#if defined(CONFIG_MPU_SENSORS_MPU3050) || defined(CONFIG_MPU_SENSORS_MPU3050_MODULE)
-	// liang
-	{
-		I2C_BOARD_INFO(SENSOR_MPU_NAME, 0x68),
-		//.irq = gpio_to_irq(MPUGPIO),
-		.irq = IRQ_EINT(27),
-		.platform_data = &mpu_data,
-	},
-#endif  //yulu for test sleep
-#endif
-#ifdef CONFIG_TC4_ICS
 
-#endif
+
 };
 
 #if  defined(CONFIG_CPU_TYPE_SCP_ELITE) || defined(CONFIG_CPU_TYPE_POP_ELITE) || defined(CONFIG_CPU_TYPE_POP2G_ELITE) //add by dg 2015 08 10
@@ -2189,20 +2190,10 @@ static struct i2c_board_info i2c_devs7[] __initdata = {
 		.irq = IRQ_EINT(0),
 	},
 #endif
-
-
-#ifdef CONFIG_SENSORS_MPU6050
-	{
-		I2C_BOARD_INFO("mpu6050", 0x68),
-		.type		= "mpu6050",
-		.platform_data = &mpu6050_data,
-		.irq = IRQ_EINT(28),
-	},
-#endif
-	
-
 	/* end add */
 #endif
+
+
 
 };
 

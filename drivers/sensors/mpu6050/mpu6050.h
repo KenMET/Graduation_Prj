@@ -23,7 +23,7 @@
 #define MPU_ADDR_AD0_LOW	0X68
 #define MPU_ADDR_AD0_HIGH	0X69
 
-#define MPU_NAME			"mpu6050"
+#define MPU_NAME			"mpu6050_dev1"
 #define	MPU_MAJOR			500
 #define	MPU_MINOR			0
 

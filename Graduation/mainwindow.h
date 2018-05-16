@@ -7,8 +7,8 @@
 #define PAINTER_WIDTH       (width() - 82)
 #define PAINTER_HEIGHT      height()
 
-#define BUFF_WIDTH          1000
-#define BUFF_HEIGHT         1000
+#define BUFF_WIDTH          500
+#define BUFF_HEIGHT         500
 
 #define TEST_POINTS         100
 
@@ -33,7 +33,7 @@ private:
 
 
 public:
-    struct vector{
+    struct vectors{
         float angle;
         float distance;
     };
@@ -48,7 +48,7 @@ public:
     };
 
     //record_point *record;
-    bool **canvas;
+    //bool **canvas;
 
 
     void paintEvent(QPaintEvent *event);
@@ -56,10 +56,10 @@ public:
 
     void User_Init(void);
 
-
-    void Put_Vector2Canvas(vector *vector, int count);
-
-
+    void Put_Canvas2File(bool **canvas);
+    void Put_Vector2Canvas(bool **canvas, vectors *vector, int count, record_point *record);
+    void Put_Canvas2Screen(record_point *record);
+    void Caculation_Canvas(bool **canvas, record_point *record);
 
 private slots:
     void on_pushButton_clicked();
