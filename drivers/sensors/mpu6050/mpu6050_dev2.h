@@ -10,13 +10,12 @@
 ***********************************************************************************/
 
 
-#ifndef __MPU6050_H__
-#define __MPU6050_H__
+#ifndef __MPU6050_DEV2_H__
+#define __MPU6050_DEV2_H__
 
 #include "mpu6050_lib.h"
 
-
-#define MPU_NAME			"mpu6050_dev1"
+#define MPU_NAME			"mpu6050_dev2"
 
 #endif
 

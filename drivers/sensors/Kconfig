@@ -15,6 +15,13 @@ config SENSORS_MPU6050
 	help
 	  Help yourself.........
 
+config SENSORS_MPU6050_DEV2
+	tristate  "mpu6050_dev2 detect support"
+	default y
+	depends on I2C
+	help
+	  Help yourself.........
+
 config SENSORS_ENCODER
 	tristate  "encode detect support"
 	default y

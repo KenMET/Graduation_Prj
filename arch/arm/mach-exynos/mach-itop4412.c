@@ -314,9 +314,9 @@ static struct mpu3050_platform_data mpu_data = {
 void sensor_hw_init(void)
 {
 		int err = -1;
-	printk("%s: line = %d\n", __FUNCTION__, __LINE__);
+	//printk("%s: line = %d\n", __FUNCTION__, __LINE__);
 
-        if (gpio_request(EXYNOS4_GPX3(4), "MPU6050 INT"))
+        if (gpio_request(EXYNOS4_GPX3(4), "MPU6050_dev1 INT"))
                 printk(KERN_WARNING "MPU6050 INT(GPX3.4) Port request error!!!\n");
         else    {
                 s3c_gpio_setpull(EXYNOS4_GPX3(4), S3C_GPIO_PULL_NONE);
@@ -324,16 +324,15 @@ void sensor_hw_init(void)
                 gpio_direction_input(EXYNOS4_GPX3(4));
                 gpio_free(EXYNOS4_GPX3(4));
         }
-/*		
-        if (gpio_request(EXYNOS4_GPX0(0), "MPU6050 INT"))
-                printk(KERN_WARNING "MPU6050 INT(GPX3.0) Port request error!!!\n");
+
+		if (gpio_request(EXYNOS4_GPX3(3), "MPU6050_dev2 INT"))
+                printk(KERN_WARNING "MPU6050 INT(GPX3.3) Port request error!!!\n");
         else    {
-                s3c_gpio_setpull(EXYNOS4_GPX0(0), S3C_GPIO_PULL_NONE);
-                s3c_gpio_cfgpin(EXYNOS4_GPX0(0), S3C_GPIO_SFN(0xF));
-                gpio_direction_input(EXYNOS4_GPX0(0));
-                gpio_free(EXYNOS4_GPX0(0));
-        }		
-*/		
+                s3c_gpio_setpull(EXYNOS4_GPX3(3), S3C_GPIO_PULL_NONE);
+                s3c_gpio_cfgpin(EXYNOS4_GPX3(3), S3C_GPIO_SFN(0xF));
+                gpio_direction_input(EXYNOS4_GPX3(3));
+                gpio_free(EXYNOS4_GPX3(3));
+        }	
 
 
         /* Sensor AK8975 DRDY */
@@ -348,6 +347,15 @@ void sensor_hw_init(void)
         //enable_irq(IRQ_EINT(27));
 */
 }
+static struct mpu_platform_data mpu6050_dev2_data = {
+        .int_config = 0x10,
+        .orientation = {
+                0, -1, 0,
+                -1, 0, 0,
+                0, 0, -1},
+
+        .level_shifter = 0,
+};
 
 static struct mpu_platform_data mpu6050_data = {
         .int_config = 0x10,
@@ -1939,6 +1947,14 @@ static struct i2c_board_info i2c_devs0[] __initdata = {
 	{
 		I2C_BOARD_INFO("s5p_ddc", (0x74 >> 1)),    
 	},
+#endif
+#ifdef CONFIG_SENSORS_MPU6050
+			{
+				I2C_BOARD_INFO("mpu6050_dev2", 0x68),
+				.type		= "mpu6050_dev2",
+				.platform_data = &mpu6050_dev2_data,
+				.irq = IRQ_EINT(28),
+			},
 #endif
 
 };
