@@ -1387,6 +1387,14 @@ void mpu_read_values(struct mpu6050_device *mpu6050, struct mpu6050_event *mpu_e
 		//mpu_log("q0:%ld q1:%ld q2:%ld q3:%ld", quat[0], quat[1], quat[2], quat[3]);
 	}
 }
+int mpu_var_delet(struct mpu6050_device *mpu)
+{
+	kfree(mpu->mpu_ev);
+	kfree(mpu->hw);
+	kfree(mpu->chip_cfg);
+	kfree(mpu->dmp);
+	return 0;
+}
 
 int mpu_var_init(struct mpu6050_device *mpu)
 {

@@ -177,6 +177,7 @@ unsigned short mpu_orientation_matrix_to_scalar(const signed char *mtx);
 
 void mpu_read_values(struct mpu6050_device *mpu6050, struct mpu6050_event *mpu_event);
 int mpu_var_init(struct mpu6050_device *mpu);
+int mpu_var_delet(struct mpu6050_device *mpu);
 int mpu_dmp_init(struct mpu6050_device *mpu6050);
 
 

@@ -251,13 +251,36 @@ static int mpu_probe(struct i2c_client *client, const struct i2c_device_id *id)
 #endif
 
 	mpu->dev_id = mpu_get_id(mpu);
-	mpu_log("WHO_AM_I:0x%x\n", mpu->dev_id);
 	
-	mpu_var_init(mpu);
-	mpu_log("mpu6050_dev2 dmp test:%d!\n", mpu_dmp_init(mpu));
+	if(mpu->dev_id != MPU_ADDR_AD0_LOW && mpu->dev_id != MPU_ADDR_AD0_HIGH)
+	{
+		mpu_log("mpu_dev2_get_id err\n");
+		goto mpu_init_failed;
+	}
+	mpu_log("WHO_AM_I_dev2:0x%x\n", mpu->dev_id);
+	
+	if(mpu_var_init(mpu) < 0)
+	{
+		mpu_log("mpu_dev2_var_init err\n");
+		goto mpu_init_failed;
+	}
 
+	if(mpu_dmp_init(mpu) < 0)
+	{
+		mpu_log("mpu_dev2 dmp init err\n");
+		goto dmp_init_failed;
+	}
+
+	mpu_log("mpu6050 dev2 init OK!!!!!!!!!!!!!!!!!!!!!!\n");
 	return 0;
-	
+
+
+dmp_init_failed:	
+	mpu_var_delet(mpu);
+mpu_init_failed:
+#ifdef INPUT_SYSTEM_SUPPORT
+	input_unregister_device(input_dev);
+#endif
 register_input_failed:
 	kfree(input_dev);
 err_free_input_mem:
