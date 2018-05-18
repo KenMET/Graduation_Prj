@@ -1,5 +1,5 @@
 /***********************************************************************************
- * mpu6050 driver for exynos4412
+ * mpu6050 lib for exynos4412
  *
  * Copyright (C) 2018 Ken International Ltd.
  *	Liu Beiming <Ken_processor@outlook.com>
@@ -320,7 +320,7 @@ int mpu_set_bypass(struct mpu6050_device *mpu6050, unsigned char bypass_on)
 		return 0;
 
 	if (bypass_on) {
-		ret = mpu_i2c_write(mpu6050, mpu6050->dev_id, MPU_USER_CTRL, 1, &tmp);
+		ret = mpu_i2c_read(mpu6050, mpu6050->dev_id, MPU_USER_CTRL, 1, &tmp);
 		if (ret < 0) {	
 			mpu_log("read user_ctrl not ok");	
 			return ret;  
@@ -346,7 +346,7 @@ int mpu_set_bypass(struct mpu6050_device *mpu6050, unsigned char bypass_on)
 		}
 	} else {
 		/* Enable I2C master mode if compass is being used. */
-		ret = mpu_i2c_write(mpu6050, mpu6050->dev_id, MPU_USER_CTRL, 1, &tmp);
+		ret = mpu_i2c_read(mpu6050, mpu6050->dev_id, MPU_USER_CTRL, 1, &tmp);
 		if (ret < 0) {	
 			mpu_log("read user_ctrl not ok");	
 			return ret;  
@@ -1267,7 +1267,7 @@ int mpu_read_fifo_stream(struct mpu6050_device *mpu6050, unsigned short length, 
     if (!mpu6050->chip_cfg->sensors)
         return -1;
 
-	ret = mpu_i2c_write(mpu6050, mpu6050->dev_id, MPU_FIFO_COUNT, 1, tmp);
+	ret = mpu_i2c_read(mpu6050, mpu6050->dev_id, MPU_FIFO_COUNT, 1, tmp);
 	if (ret < 0) {	
 		mpu_log("read MPU_FIFO_COUNT not ok");	
 		return ret;  
@@ -1279,7 +1279,7 @@ int mpu_read_fifo_stream(struct mpu6050_device *mpu6050, unsigned short length, 
     }
     if (fifo_count > (mpu6050->hw->max_fifo >> 1)) {
         /* FIFO is 50% full, better check overflow bit. */
-		ret = mpu_i2c_write(mpu6050, mpu6050->dev_id, MPU_INT_STAT, 1, tmp);
+		ret = mpu_i2c_read(mpu6050, mpu6050->dev_id, MPU_INT_STAT, 1, tmp);
 		if (ret < 0) {	
 			mpu_log("read MPU_INT_STAT not ok");	
 			return ret;  
@@ -1289,7 +1289,7 @@ int mpu_read_fifo_stream(struct mpu6050_device *mpu6050, unsigned short length, 
             return -2;
         }
     }
-	ret = mpu_i2c_write(mpu6050, mpu6050->dev_id, MPU_FIFO_R_W, length, data);
+	ret = mpu_i2c_read(mpu6050, mpu6050->dev_id, MPU_FIFO_R_W, length, data);
 	if (ret < 0) {	
 		mpu_log("read MPU_FIFO_R_W not ok");	
 		return ret;  
@@ -1487,7 +1487,6 @@ int mpu_dmp_init(struct mpu6050_device *mpu6050)
 		mpu_log("write PWR_MGMT_1 not ok");	
 		return ret;  
 	}
-	
 
 	msleep(100);
 	/* Wake up chip. */
@@ -1499,7 +1498,7 @@ int mpu_dmp_init(struct mpu6050_device *mpu6050)
 	}
 
 	/* Check product revision. */
-	ret = mpu_i2c_write(mpu6050, mpu6050->dev_id, MPU_ACCEL_OFFS, 6, val);
+	ret = mpu_i2c_read(mpu6050, mpu6050->dev_id, MPU_ACCEL_OFFS, 6, val);
 	if (ret < 0) {	
 		mpu_log("read accel_offs not ok");	
 		return ret;  
@@ -1516,19 +1515,15 @@ int mpu_dmp_init(struct mpu6050_device *mpu6050)
 		else if (rev == 2)
 		mpu6050->chip_cfg->accel_half = 0;
 		else
-		{
-			mpu_log("mpu read rev != 1 or 2");	
-			return -1;
-		}
+		return -1;
 	} else {
-		ret = mpu_i2c_write(mpu6050, mpu6050->dev_id, MPU_PROD_ID, 1, val);
+		ret = mpu_i2c_read(mpu6050, mpu6050->dev_id, MPU_PROD_ID, 1, val);
 		if (ret < 0) {	
-			mpu_log("mpu read prod_id not ok");	
+			mpu_log("read prod_id not ok");	
 			return ret;  
 		}
 		rev = val[0] & 0x0F;
 		if (!rev) {
-			mpu_log("mpu read rev == 0");
 			return -1;
 		} else if (rev == 4) {
 			mpu6050->chip_cfg->accel_half = 1;
@@ -1537,41 +1532,29 @@ int mpu_dmp_init(struct mpu6050_device *mpu6050)
 	}
 
 	ret = mpu_set_gyro_fsr(mpu6050, 2000);
-	if (ret < 0) {	
-		mpu_log("mpu_set_gyro_fsr not ok");	
-		return ret;  
-	}
+	if (ret != 0)
+		return -1;
 	
 	ret = mpu_set_accel_fsr(mpu6050, 2);
-	if (ret < 0) {	
-		mpu_log("mpu_set_accel_fsr not ok");	
-		return ret;  
-	}
+	if (ret != 0)
+		return -1;
 	
 	ret = mpu_set_lpf(mpu6050, 42);
-	if (ret < 0) {	
-		mpu_log("mpu_set_lpf not ok");	
-		return ret;  
-	}
+	if (ret != 0)
+		return -1;
 	
 	ret = mpu_set_sample_rate(mpu6050, 50);
-	if (ret < 0) {	
-		mpu_log("mpu_set_sample_rate not ok");	
-		return ret;  
-	}
+	if (ret != 0)
+		return -1;
 	
 	ret = mpu_configure_fifo(mpu6050, 0);
-	if (ret < 0) {	
-		mpu_log("mpu_configure_fifo not ok");	
-		return ret;  
-	}
+	if (ret != 0)
+		return -1;
 	
 	/* Already disabled by setup_compass. */
 	ret = mpu_set_bypass(mpu6050, 0);
-	if (ret < 0) {	
-		mpu_log("mpu_set_bypass not ok");	
-		return ret;  
-	}
+	if (ret != 0)
+		return -1;
 
 	 	  
 
@@ -1638,4 +1621,3 @@ int mpu_dmp_init(struct mpu6050_device *mpu6050)
 
 	return 0;
 }
-

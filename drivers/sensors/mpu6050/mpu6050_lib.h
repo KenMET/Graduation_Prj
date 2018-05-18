@@ -23,8 +23,8 @@
 #define MPU_ADDR_AD0_LOW	0X68
 #define MPU_ADDR_AD0_HIGH	0X69
 
+
 #define	MPU_MAJOR			500
-#define	MPU_MINOR			0
 
 #define	MPU_DELAY_WORK_INTERVAL	1
 
@@ -139,8 +139,6 @@ int mpu_i2c_read(struct mpu6050_device *mpu6050, unsigned char addr, unsigned ch
 int mpu_i2c_write(struct mpu6050_device *mpu6050, unsigned char addr, unsigned char reg, unsigned char len, unsigned char *value);
 int mpu_read_mem(struct mpu6050_device *mpu6050, unsigned short mem_addr, unsigned short length, unsigned char *data);
 int mpu_write_mem(struct mpu6050_device *mpu6050, unsigned short mem_addr, unsigned short length,unsigned char *data);
-int mpu_var_init(struct mpu6050_device *mpu);
-int mpu_dmp_init(struct mpu6050_device *mpu6050);
 int mpu_set_gyro_fsr(struct mpu6050_device *mpu6050, unsigned short fsr);
 int mpu_set_accel_fsr(struct mpu6050_device *mpu6050, unsigned char fsr);
 int mpu_set_lpf(struct mpu6050_device *mpu6050, unsigned short lpf);
@@ -173,8 +171,14 @@ int dmp_set_lp_quat_status(struct mpu6050_device *mpu6050, unsigned char enable)
 int dmp_set_6x_lp_quat_status(struct mpu6050_device *mpu6050, unsigned char enable);
 int dmp_set_feature_status(struct mpu6050_device *mpu6050, unsigned short mask);
 int dmp_load_motion_driver_firmware(struct mpu6050_device *mpu6050);
+unsigned short mpu_row_to_scale(const signed char *row);
+unsigned short mpu_orientation_matrix_to_scalar(const signed char *mtx);
+
 
 void mpu_read_values(struct mpu6050_device *mpu6050, struct mpu6050_event *mpu_event);
+int mpu_var_init(struct mpu6050_device *mpu);
+int mpu_dmp_init(struct mpu6050_device *mpu6050);
+
 
 
 

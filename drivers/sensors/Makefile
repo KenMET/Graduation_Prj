@@ -6,7 +6,7 @@
 # Rewritten to use lists instead of if-statements.
 #
 
-obj-y									+= mpu6050/mpu6050_lib.o
-obj-$(CONFIG_SENSORS_MPU6050)			+= mpu6050/mpu6050.o
-obj-$(CONFIG_SENSORS_MPU6050_DEV2)		+= mpu6050/mpu6050_dev2.o
-obj-$(CONFIG_SENSORS_ENCODER)			+= encoder/encode.o
+obj-$(CONFIG_SENSORS_MPU6050)		+= mpu6050/mpu6050_lib.o
+obj-$(CONFIG_SENSORS_MPU6050)		+= mpu6050/mpu6050.o
+obj-$(CONFIG_SENSORS_MPU6050)		+= mpu6050/mpu6050_dev2.o
+obj-$(CONFIG_SENSORS_ENCODER)		+= encoder/encode.o

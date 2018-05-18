@@ -32,7 +32,7 @@
 #include <asm/io.h>
 
 #include "mpu6050_dev2.h"
-#include "mpu6050_lib.h"
+
 
 #define	INPUT_SYSTEM_SUPPORT
 
@@ -155,7 +155,7 @@ static int mpu_probe(struct i2c_client *client, const struct i2c_device_id *id)
 	struct mpu6050_platform_data *pdata = client->dev.platform_data;
 	struct input_dev *input_dev;
 
-	dev_t devno = MKDEV(MPU_MAJOR, MPU_MINOR);
+	dev_t devno = MKDEV(MPU_MAJOR, MPU_DEV2_MINOR);
 
 	mpu_log("mpu6050_dev2 driver  probe!\n");
 	
@@ -223,7 +223,7 @@ static int mpu_probe(struct i2c_client *client, const struct i2c_device_id *id)
 		goto err_free_input_mem;
 	}
 	mpu->input = input_dev;
-	input_dev->name = "MPU6050 DMP Quaternion";
+	input_dev->name = "mpu6050_dev2 DMP Quaternion";
 	input_dev->phys = mpu->phys;
 	input_dev->id.bustype = BUS_I2C;
 
@@ -250,11 +250,11 @@ static int mpu_probe(struct i2c_client *client, const struct i2c_device_id *id)
 	}
 #endif
 
-	mpu->dev_id = mpu_get_id(mpu6050_dev2);
-	mpu_log("WHO_AM_I_V2:0x%x\n", mpu->dev_id);
+	mpu->dev_id = mpu_get_id(mpu);
+	mpu_log("WHO_AM_I:0x%x\n", mpu->dev_id);
 	
-	mpu_var_init(mpu6050_dev2);
-	mpu_log("mpu6050_dev2 dmp test:%d!\n", mpu_dmp_init(mpu6050_dev2));
+	mpu_var_init(mpu);
+	mpu_log("mpu6050_dev2 dmp test:%d!\n", mpu_dmp_init(mpu));
 
 	return 0;
 	
@@ -277,7 +277,7 @@ check_functionality_failed:
 
 static int __devexit mpu_remove(struct i2c_client *client)
 {
-	dev_t devno = MKDEV(MPU_MAJOR, MPU_MINOR); 
+	dev_t devno = MKDEV(MPU_MAJOR, MPU_DEV2_MINOR); 
 	mpu_log("mpu6050_dev2 driver remove!\n");
     cdev_del(&mpu6050_dev2->cdev);  
     unregister_chrdev_region(devno, 1);  
@@ -310,7 +310,7 @@ static int __init mpu_init(void)
 }
 static void __exit mpu_exit(void)
 {
-	mpu_log("mpu6050 driver exit\n");
+	mpu_log("mpu6050_dev2 driver exit\n");
 	i2c_del_driver(&mpu6050_dev2_driver);
 } 
 
@@ -318,5 +318,5 @@ late_initcall(mpu_init);
 module_exit(mpu_exit);
 MODULE_DEVICE_TABLE(i2c, mpu6050_dev2_id);
 MODULE_AUTHOR("Ken");
-MODULE_DESCRIPTION("MPU6050_dev2 driver demo");
+MODULE_DESCRIPTION("mpu6050_dev2 driver demo");
 MODULE_LICENSE("GPL");

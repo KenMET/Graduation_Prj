@@ -15,8 +15,9 @@
 
 #include "mpu6050_lib.h"
 
-
 #define MPU_NAME			"mpu6050_dev1"
+#define	MPU_MINOR			1
+
 
 #endif
 

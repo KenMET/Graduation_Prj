@@ -23,6 +23,8 @@
 #include <linux/cdev.h>
 #include <linux/miscdevice.h>
 #include <linux/platform_device.h>
+#include "linux/timer.h"
+#include "linux/jiffies.h"
 
 #include <plat/exynos4.h>
 #include <plat/gpio-cfg.h>
@@ -34,32 +36,112 @@
 
 #include "encode.h"
 
+#define encoder_order_XYZ
+//#define encoder_order_YZX
+//#define encoder_order_ZXY
+
+
+static struct proc_dir_entry *encoder_proc_entry;
 struct encode_device *encoder;
+struct timer_list demo_timer;
+
+
+static void encode_work(struct work_struct *work)
+{
+	struct encode_device *encode =
+			container_of(to_delayed_work(work), struct encode_device, work);
+	struct input_dev *input = encode->input;
+	static int test = 0;
+	
+	if(input == NULL)
+		return ;
+	
+
+	input_report_abs(input, ABS_X, encode->pause);
+	input_report_abs(input, ABS_Y, encode->rand);
+
+	test = !test;
+	input_report_key(input, BTN_TOUCH, test);
+	
+	input_sync(input);
+}
 
 
 static irqreturn_t encode_x_irq(int irq, void *handle)
 {
-	//encode_log("encode x_irq\n");
+#ifdef encoder_order_XYZ
 	if(gpio_get_value(ENCODER_PIN_Y))
-		encoder->pause++;
-	else
+	{
+		encoder->now_way = 0;
 		encoder->pause--;
+	}
+	else
+	{
+		encoder->now_way = 1;
+		encoder->pause++;
+	}
+#endif
+#ifdef encoder_order_YZX
+	if(!encoder->now_way)
+		encoder->rand--;
+	else
+		encoder->rand++;
+#endif
+
 	return IRQ_HANDLED;
 }
 
 static irqreturn_t encode_y_irq(int irq, void *handle)
 {
-	encode_log("encode y_irq\n");
-
+#ifdef encoder_order_YZX
+	if(gpio_get_value(ENCODER_PIN_Z))
+	{
+		encoder->now_way = 0;
+		encoder->pause--;
+	}
+	else
+	{
+		encoder->now_way = 1;
+		encoder->pause++;
+	}
+#endif
+#ifdef encoder_order_ZXY
+	if(!encoder->now_way)
+		encoder->rand--;
+	else
+		encoder->rand++;
+#endif
 	return IRQ_HANDLED;
 }
 
 static irqreturn_t encode_z_irq(int irq, void *handle)
 {
-	int tmp = encoder->pause;
-	encode_log("%d\n", tmp);
-
+#ifdef encoder_order_ZXY
+	if(gpio_get_value(ENCODER_PIN_X))
+	{
+		encoder->now_way = 0;
+		encoder->pause--;
+	}
+	else
+	{
+		encoder->now_way = 1;
+		encoder->pause++;
+	}
+#endif
+#ifdef encoder_order_XYZ
+	if(!encoder->now_way)
+		encoder->rand--;
+	else
+		encoder->rand++;
+#endif
 	return IRQ_HANDLED;
+}
+
+
+static void encode_timer_func(unsigned long data)
+{
+	schedule_delayed_work(&encoder->work, ENCODER_DELAY_WORK_INTERVAL);
+	mod_timer(&demo_timer,jiffies + HZ / 2);
 }
 
 
@@ -68,6 +150,7 @@ static int encode_probe(struct platform_device *pdev)
 {
 	int err = -EINVAL;
 	struct encode_device *encode_ohm;
+	struct input_dev *input_dev;
 	
 	encode_log("encode driver probe\n");
 
@@ -116,12 +199,12 @@ static int encode_probe(struct platform_device *pdev)
 		printk(KERN_ERR "failed to request Encode_X_IRQ\n");
 		return -1;
 	}
-	//err = request_irq(ENCODER_IRQ_Y, encode_y_irq, IRQ_TYPE_EDGE_RISING,
-	//			pdev->dev.driver->name, NULL);
-	//if (err) {
-	//	printk(KERN_ERR "failed to request Encode_Y_IRQ\n");
-	//	return -1;
-	//}
+	err = request_irq(ENCODER_IRQ_Y, encode_y_irq, IRQ_TYPE_EDGE_RISING,
+				pdev->dev.driver->name, NULL);
+	if (err) {
+		printk(KERN_ERR "failed to request Encode_Y_IRQ\n");
+		return -1;
+	}
 	err = request_irq(ENCODER_IRQ_Z, encode_z_irq, IRQ_TYPE_EDGE_RISING,
 				pdev->dev.driver->name, NULL);
 	if (err) {
@@ -129,9 +212,44 @@ static int encode_probe(struct platform_device *pdev)
 		return -1;
 	}
 
+	input_dev = input_allocate_device();
+	if (!input_dev) {
+		err = -ENOMEM;
+		goto err_free_input_mem;
+	}
+	encode_ohm->input = input_dev;
+	input_dev->name = "Encoder Quaternion";
+
+	set_bit(EV_SYN, input_dev->evbit);
+	set_bit(EV_ABS, input_dev->evbit);
+	set_bit(EV_KEY, input_dev->evbit);
+	
+	set_bit(ABS_X, input_dev->absbit);
+	set_bit(ABS_Y, input_dev->absbit);
+	set_bit(BTN_TOUCH, input_dev->keybit);
+
+
+	input_set_abs_params(input_dev, ABS_X, -2147438647, 2147438646, 0, 0);
+	input_set_abs_params(input_dev, ABS_Y, -2147438647, 2147438646, 0, 0);
+
+	err = input_register_device(input_dev);
+	if (err) {
+		encode_log("input device register failed\n");
+		goto register_input_failed;
+	}
+
+	INIT_DELAYED_WORK(&encode_ohm->work, encode_work);
+
+	setup_timer(&demo_timer, encode_timer_func, (unsigned long)"demo_timer!");
+	demo_timer.expires = jiffies + 1*HZ;
+	add_timer(&demo_timer);
+
 
 	return 0;
+	
+register_input_failed:
 
+err_free_input_mem:
 
 gpio_request_failed:
 	kfree(encoder);
@@ -144,6 +262,7 @@ static int encode_remove (struct platform_device *pdev)
 {	
 	encode_log("encode remove!\n");	
 	misc_deregister(pdev);	
+	del_timer(&demo_timer);
 	return 0;
 }
 
@@ -181,6 +300,7 @@ static void __exit encode_exit(void)
 {
 	encode_log("encode driver exit\n");
 	platform_driver_unregister(&encode_driver);
+	del_timer(&demo_timer);
 } 
 
 late_initcall(encode_init);

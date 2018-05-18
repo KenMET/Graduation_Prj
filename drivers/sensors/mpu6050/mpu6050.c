@@ -32,13 +32,12 @@
 #include <asm/io.h>
 
 #include "mpu6050.h"
-#include "mpu6050_lib.h"
 
 
 #define	INPUT_SYSTEM_SUPPORT
 
-static struct proc_dir_entry *mpu_dev1_proc_entry;
-struct mpu6050_device *mpu6050_dev1;
+static struct proc_dir_entry *mpu_proc_entry;
+struct mpu6050_device *mpu6050;
 
 
 static int mpu_open(struct inode *inode, struct file *filp)
@@ -59,10 +58,10 @@ static long mpu_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
   
     switch(cmd) {  
     	case 2:
-			mpu_ev.q1 = mpu6050_dev1->mpu_ev->q1;
-			mpu_ev.q2 = mpu6050_dev1->mpu_ev->q2;
-			mpu_ev.q3 = mpu6050_dev1->mpu_ev->q3;
-			mpu_ev.q4 = mpu6050_dev1->mpu_ev->q4;
+			mpu_ev.q1 = mpu6050->mpu_ev->q1;
+			mpu_ev.q2 = mpu6050->mpu_ev->q2;
+			mpu_ev.q3 = mpu6050->mpu_ev->q3;
+			mpu_ev.q4 = mpu6050->mpu_ev->q4;
 			break;
 		default:
 			mpu_log("ioctl unkown cmd\n");
@@ -81,7 +80,7 @@ static unsigned int mpu_poll(struct file *file, struct poll_table_struct *poll_t
 }
 
 
-static struct file_operations mpu6050_dev1_fops = {
+static struct file_operations mpu6050_fops = {
     .owner			= THIS_MODULE,
     .open			= mpu_open,
     .release		= mpu_release,
@@ -174,7 +173,7 @@ static int mpu_probe(struct i2c_client *client, const struct i2c_device_id *id)
 		dev_err(&client->dev, "probe kzalloc failed\n");
 		goto kzalloc_failed;
 	}
-	mpu6050_dev1 = mpu;
+	mpu6050 = mpu;
 	
 	mpu->client = client;
 
@@ -185,7 +184,7 @@ static int mpu_probe(struct i2c_client *client, const struct i2c_device_id *id)
 		goto register_chrdev_failed;
     }
 
-	cdev_init(&mpu->cdev, &mpu6050_dev1_fops);  
+	cdev_init(&mpu->cdev, &mpu6050_fops);  
 	mpu->cdev.owner = THIS_MODULE;	
 	err = cdev_add(&mpu->cdev, devno, 1);  
 	if (err < 0) {	
@@ -251,11 +250,11 @@ static int mpu_probe(struct i2c_client *client, const struct i2c_device_id *id)
 	}
 #endif
 
-	mpu->dev_id = mpu_get_id(mpu6050_dev1);
+	mpu->dev_id = mpu_get_id(mpu);
 	mpu_log("WHO_AM_I:0x%x\n", mpu->dev_id);
 	
-	mpu_var_init(mpu6050_dev1);
-	mpu_log("mpu6050_dev1 dmp test:%d!\n", mpu_dmp_init(mpu6050_dev1));
+	mpu_var_init(mpu);
+	mpu_log("mpu6050 dmp test:%d!\n", mpu_dmp_init(mpu));
 
 	return 0;
 	
@@ -270,7 +269,7 @@ create_class_failed:
 add_cdev_failed:
 	unregister_chrdev_region(devno, 1);
 register_chrdev_failed:
-	kfree(mpu6050_dev1);
+	kfree(mpu6050);
 kzalloc_failed:
 check_functionality_failed:
 	return err;
@@ -280,22 +279,22 @@ static int __devexit mpu_remove(struct i2c_client *client)
 {
 	dev_t devno = MKDEV(MPU_MAJOR, MPU_MINOR); 
 	mpu_log("mpu6050 driver remove!\n");
-    cdev_del(&mpu6050_dev1->cdev);  
+    cdev_del(&mpu6050->cdev);  
     unregister_chrdev_region(devno, 1);  
-    kfree(mpu6050_dev1);
+    kfree(mpu6050);
 	return 0;
 }
 
-static const struct i2c_device_id mpu6050_dev1_id[] = {
+static const struct i2c_device_id mpu6050_id[] = {
 	{MPU_NAME, 0},
 	{}
 };
 
-static struct i2c_driver mpu6050_dev1_driver = {
+static struct i2c_driver mpu6050_driver = {
 	.class = I2C_CLASS_HWMON,
 	.probe = mpu_probe,
 	.remove = mpu_remove,
-	.id_table = mpu6050_dev1_id,
+	.id_table = mpu6050_id,
 	.driver = {
 		.owner = THIS_MODULE,
 		.name = MPU_NAME,
@@ -304,20 +303,20 @@ static struct i2c_driver mpu6050_dev1_driver = {
 
 static int __init mpu_init(void)
 {
-	int flag = i2c_add_driver(&mpu6050_dev1_driver);
-	mpu_log("mpu6050_dev1 driver init1!flag:%d\n", flag);
+	int flag = i2c_add_driver(&mpu6050_driver);
+	mpu_log("mpu6050 driver init1!flag:%d\n", flag);
 	
 	return flag;
 }
 static void __exit mpu_exit(void)
 {
 	mpu_log("mpu6050 driver exit\n");
-	i2c_del_driver(&mpu6050_dev1_driver);
+	i2c_del_driver(&mpu6050_driver);
 } 
 
 late_initcall(mpu_init);
 module_exit(mpu_exit);
-MODULE_DEVICE_TABLE(i2c, mpu6050_dev1_id);
+MODULE_DEVICE_TABLE(i2c, mpu6050_id);
 MODULE_AUTHOR("Ken");
-MODULE_DESCRIPTION("MPU6050_dev1 driver demo");
+MODULE_DESCRIPTION("MPU6050 driver demo");
 MODULE_LICENSE("GPL");
